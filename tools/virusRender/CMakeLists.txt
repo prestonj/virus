@@ -1,0 +1,3 @@
+add_executable(virusRender virusRender.cpp)
+target_link_libraries(virusRender PRIVATE virusLib)
+target_compile_features(virusRender PRIVATE cxx_std_17)

@@ -1,0 +1,22 @@
+diff --git a/src/obxf-python/ObxfPython.h b/src/obxf-python/ObxfPython.h
+index a5bc124..ae71099 100644
+--- a/src/obxf-python/ObxfPython.h
++++ b/src/obxf-python/ObxfPython.h
+@@ -154,7 +154,7 @@ class ObxfPyEngine
+ 
+         MatrixRow row;
+         row.source = src;
+-        row.target = target;
++        row.target = matrixTargetFromString(target);
+         row.depth = depth;
+ 
+         processor.getSynth().getMotherboard()->voiceMatrix.rows[idx] = row;
+@@ -199,7 +199,7 @@ class ObxfPyEngine
+             py::dict d;
+             d["dimension"] = matrixSourceToString(src);
+             d["row"] = localIdx;
+-            d["target"] = row.target;
++            d["target"] = matrixTargetToString(row.target);
+             d["depth"] = row.depth;
+ 
+             result.append(d);
