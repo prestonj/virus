@@ -27,6 +27,17 @@ JOBS="$(sysctl -n hw.ncpu 2>/dev/null || nproc)"
 cmake --build build --target virusRender -j "$JOBS"
 echo "built build/virusRender/virusRender"
 
+# Patch template: the ROM's -INIT- single, upgraded to TI format by a round trip through the
+# firmware. Generated from your own firmware so no Access content lives in the repo.
+if [ -f rom/firmware.bin ] && [ ! -f patches/reference/init-ti.syx ]; then
+	mkdir -p patches/reference
+	build/virusRender/virusRender --rom rom/firmware.bin --preset 127 --export-syx patches/reference/init.syx >/dev/null
+	build/virusRender/virusRender --rom rom/firmware.bin --syx patches/reference/init.syx --hold 0.1 --tail 0.1 \
+		--out /dev/null --dump-out patches/reference/init-ti.syx >/dev/null
+	rm patches/reference/init.syx
+	echo "generated patches/reference/init-ti.syx"
+fi
+
 # OB-Xf Python module for reference renders (tools/obxf_render.py)
 if [ ! -d third_party/obxf ]; then
 	git clone --depth 1 https://github.com/surge-synthesizer/OB-Xf third_party/obxf

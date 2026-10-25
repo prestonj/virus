@@ -1,0 +1,134 @@
+{
+ "reference": "Warmth",
+ "hold": 3.0,
+ "tail": 4.0,
+ "mapping_notes": [
+  "osc2 detune 1.6 cents",
+  "LFO1 1.61 Hz, +/-8.3 c on osc1 +1 / osc2 -1"
+ ],
+ "amp_level_error_db": 2.4,
+ "band_shape_error_db": 2.48,
+ "cutoff_fit": 43,
+ "cutoff_trimmed": 40,
+ "attack_brightness_gap_semitones": 0.15,
+ "changes_from_init": {
+  "Amp Env Attack": [
+   0,
+   64
+  ],
+  "Amp Env Decay": [
+   127,
+   80
+  ],
+  "Amp Env Release": [
+   4,
+   71
+  ],
+  "Amp Env Sustain": [
+   127,
+   126
+  ],
+  "Amp Velocity": [
+   64,
+   78
+  ],
+  "Cutoff": [
+   127,
+   48
+  ],
+  "Filter Balance": [
+   64,
+   0
+  ],
+  "Filter Env Attack": [
+   0,
+   53
+  ],
+  "Filter Env Decay": [
+   46,
+   99
+  ],
+  "Filter Env Release": [
+   127,
+   72
+  ],
+  "Filter Env Sustain": [
+   0,
+   14
+  ],
+  "Filter1 Env Amt": [
+   0,
+   37
+  ],
+  "Filter1 Keyfollow": [
+   64,
+   92
+  ],
+  "Filter1 Mode": [
+   0,
+   7
+  ],
+  "Filter1 Resonance": [
+   0,
+   15
+  ],
+  "Flt1 EnvAmt Velocity": [
+   64,
+   54
+  ],
+  "Lfo1 Rate": [
+   48,
+   73
+  ],
+  "Lfo1 Shape": [
+   1,
+   0
+  ],
+  "LowEQ Frequency": [
+   43,
+   44
+  ],
+  "LowEQ Gain": [
+   64,
+   88
+  ],
+  "MidEQ Frequency": [
+   71,
+   54
+  ],
+  "MidEQ Gain": [
+   64,
+   96
+  ],
+  "MidEQ Q-Factor": [
+   51,
+   35
+  ],
+  "Osc1 Lfo1 Amount": [
+   64,
+   71
+  ],
+  "Osc1 Semitone": [
+   64,
+   52
+  ],
+  "Osc2 Detune": [
+   32,
+   25
+  ],
+  "Osc2 Lfo1 Amount": [
+   64,
+   57
+  ],
+  "Osc2 Semitone": [
+   64,
+   52
+  ]
+ },
+ "listening_edits": [
+  "Cutoff 40 -> 48: user: 'a touch brighter' (picked c48 over c44); 48 also matches OB-Xf sustain brightness",
+  "Filter attack kept at the fitted 53 (a shorter attack was tried and rejected)",
+  "EQ for more low end: Mid EQ +8 dB at 404 Hz (Q 0.74) plus Low shelf +6 dB at 82 Hz. User: OB 'seems bassier'; picked this 'bodylow' version over mid-EQ only and a sub-osc version"
+ ],
+ "verdict": "Brightness, attack and low end chosen by ear (2026-10-24); no final verdict yet."
+}

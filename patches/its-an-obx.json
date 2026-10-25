@@ -1,0 +1,93 @@
+{
+ "reference": "It's an OB-X!",
+ "hold": 2.0,
+ "tail": 4.0,
+ "mapping_notes": [
+  "osc2 detune 18.9 cents",
+  "LFO1 3.87 Hz, +/-10.5 c on osc1 +1 / osc2 +1"
+ ],
+ "amp_level_error_db": 1.8,
+ "band_shape_error_db": 3.14,
+ "cutoff_fit": 44,
+ "cutoff_trimmed": 45,
+ "attack_brightness_gap_semitones": -0.07,
+ "changes_from_init": {
+  "Amp Env Attack": [
+   0,
+   32
+  ],
+  "Amp Env Decay": [
+   127,
+   123
+  ],
+  "Amp Env Release": [
+   4,
+   82
+  ],
+  "Amp Env Sustain": [
+   127,
+   107
+  ],
+  "Cutoff": [
+   127,
+   45
+  ],
+  "Filter Balance": [
+   64,
+   0
+  ],
+  "Filter Env Decay": [
+   46,
+   89
+  ],
+  "Filter Env Release": [
+   127,
+   80
+  ],
+  "Filter Env Sustain Time": [
+   64,
+   65
+  ],
+  "Filter1 Env Amt": [
+   0,
+   103
+  ],
+  "Filter1 Keyfollow": [
+   64,
+   79
+  ],
+  "Filter1 Mode": [
+   0,
+   5
+  ],
+  "Filter1 Resonance": [
+   0,
+   17
+  ],
+  "Flt1 EnvAmt Velocity": [
+   64,
+   34
+  ],
+  "Lfo1 Rate": [
+   48,
+   91
+  ],
+  "Lfo1 Shape": [
+   1,
+   0
+  ],
+  "Osc1 Lfo1 Amount": [
+   64,
+   72
+  ],
+  "Osc2 Detune": [
+   32,
+   101
+  ],
+  "Osc2 Lfo1 Amount": [
+   64,
+   72
+  ]
+ },
+ "verdict": "**Approved by ear** (2026-10-24): \"sounds good\"."
+}

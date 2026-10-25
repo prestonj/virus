@@ -50,9 +50,14 @@ PARAMS = _load_params()
 # Names that alias a byte only in vocoder / filter-bank / input-follower modes
 _MODE_ALIAS = re.compile(r"Vocoder|Carrier|Modulator|Input Follower|Filter Bank|Backup")
 # offset -> most useful name for that byte in a normal (non-vocoder) patch
+def _alias_rank(name):
+    # lower is better: plain names, then mode-prefixed ("Osc1 HyperSaw/Density"), then vocoder etc.
+    return (2 if _MODE_ALIAS.search(name) else 0) + (1 if "/" in name else 0)
+
+
 PRIMARY = {}
 for _n, _p in PARAMS.items():
-    if _p["offset"] not in PRIMARY or (_MODE_ALIAS.search(PRIMARY[_p["offset"]]) and not _MODE_ALIAS.search(_n)):
+    if _p["offset"] not in PRIMARY or _alias_rank(_n) < _alias_rank(PRIMARY[_p["offset"]]):
         PRIMARY[_p["offset"]] = _n
 
 

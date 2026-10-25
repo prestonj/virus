@@ -1,0 +1,132 @@
+{
+ "reference": "OBX Bass 1",
+ "hold": 2.0,
+ "tail": 1.5,
+ "mapping_notes": [
+  "osc1: pulse, duty 0.444",
+  "osc2: pulse, duty 0.444",
+  "osc2 detune 0.1 cents",
+  "unison 8 voices (Virus 8), OB-Xf spread +/-21 c random -> even width 37 c",
+  "EnvToPitchAmount=0.036 not translated"
+ ],
+ "amp_level_error_db": 0.59,
+ "band_shape_error_db": 3.09,
+ "cutoff_fit": 38,
+ "cutoff_trimmed": 36,
+ "attack_brightness_gap_semitones": -0.0,
+ "changes_from_init": {
+  "Amp Env Attack": [
+   0,
+   37
+  ],
+  "Amp Env Decay": [
+   127,
+   36
+  ],
+  "Amp Env Release": [
+   4,
+   50
+  ],
+  "Amp Env Sustain": [
+   127,
+   0
+  ],
+  "Cutoff": [
+   127,
+   42
+  ],
+  "Filter Balance": [
+   64,
+   0
+  ],
+  "Filter Env Attack": [
+   0,
+   1
+  ],
+  "Filter Env Decay": [
+   46,
+   60
+  ],
+  "Filter Env Release": [
+   127,
+   30
+  ],
+  "Filter Env Sustain": [
+   0,
+   22
+  ],
+  "Filter Env Sustain Time": [
+   64,
+   66
+  ],
+  "Filter1 Env Amt": [
+   0,
+   69
+  ],
+  "Filter1 Keyfollow": [
+   64,
+   81
+  ],
+  "Filter1 Mode": [
+   0,
+   7
+  ],
+  "Filter1 Resonance": [
+   0,
+   25
+  ],
+  "Flt1 EnvAmt Velocity": [
+   64,
+   57
+  ],
+  "Key Mode": [
+   0,
+   1
+  ],
+  "Osc Balance": [
+   64,
+   127
+  ],
+  "Osc1 Pulsewidth": [
+   0,
+   14
+  ],
+  "Osc1 Shape": [
+   64,
+   127
+  ],
+  "Osc2 Detune": [
+   32,
+   5
+  ],
+  "Osc2 Pulsewidth": [
+   0,
+   14
+  ],
+  "Osc2 Shape": [
+   64,
+   127
+  ],
+  "Osc2 Sync": [
+   0,
+   1
+  ],
+  "Transpose": [
+   64,
+   52
+  ],
+  "Unison Detune": [
+   48,
+   80
+  ],
+  "Unison Mode": [
+   0,
+   7
+  ]
+ },
+ "listening_edits": [
+  "Unison Detune 121 -> 80: user heard the Virus wobble more; 80 matches OB-Xf's typical wobble (measured)",
+  "Cutoff 36 -> 42: user: 'a touch brighter' (picked c42 over c39)"
+ ],
+ "verdict": "Chosen by ear (2026-10-24): cutoff 42 picked over 39 after the wobble fix; no final verdict yet."
+}

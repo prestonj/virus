@@ -14,8 +14,9 @@ auditioned through an emulator before loading onto the hardware.
 4. **Audition** — send the finished `.syx` to the TI2 edit buffer and save the
    keepers by hand.
 
-**Read [docs/FINDINGS.md](docs/FINDINGS.md) first** — it records what we've
-learned about the format, the controls and the tooling.
+**Read [docs/PROCESS.md](docs/PROCESS.md) and [docs/FINDINGS.md](docs/FINDINGS.md)
+first** — how we work (and what the listener wants), and what we've learned
+about the format, the controls and the tooling.
 
 ## Setup
 
@@ -46,7 +47,8 @@ $R --rom rom/firmware.bin --syx x.syx --notes 48,55,60,64 \
 `--dump-out` saves the edit buffer as the firmware holds it after loading.
 ROM singles in the older format come back upgraded to TI format (version
 byte `0C`); `patches/reference/init-ti.syx` is the upgraded `-INIT-` and is
-the template for generated patches. Renders are bit-identical across runs.
+the template for generated patches. `build.sh` generates it from your own
+firmware; it and any other ROM exports are never committed. Renders are bit-identical across runs.
 
 ## OB-Xf reference renders
 
