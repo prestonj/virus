@@ -71,11 +71,13 @@ def card(slug, title=None):
     lines += [f"- {n}" for n in report["mapping_notes"]] or ["- none"]
     if report.get("listening_edits"):
         lines += ["", "## Changes made by ear", ""] + [f"- {e}" for e in report["listening_edits"]]
+    if report.get("variant_edits"):
+        lines += ["", "## Variant changes (not yet heard)", ""] + [f"- {e}" for e in report["variant_edits"]]
     lines += ["", "## How close it is", "",
               f"- Amp envelope level-shape error {report['amp_level_error_db']} dB; filter band-shape error "
               f"{report['band_shape_error_db']} dB (Obright final was 4.49 dB).",
-              f"- Cutoff trimmed {report['cutoff_fit']} → {report['cutoff_trimmed']} so the first 0.3 s matches "
-              f"OB-Xf's brightness (gap {report['attack_brightness_gap_semitones']:+} semitones).",
+              f"- Cutoff trimmed {report['cutoff_fit']} → {report['cutoff_trimmed']} so the held note (attack and "
+              f"sustain medians) matches OB-Xf's brightness (gap {report['attack_brightness_gap_semitones']:+} semitones).",
               f"- Listening files: `renders/{slug}/listen/*_AB.wav` (OB-Xf first, then Virus, "
               f"loudness-matched; {report['hold']} s hold, {report['tail']} s tail).",
               "- " + report.get("verdict", "Not yet checked by ear."), ""]

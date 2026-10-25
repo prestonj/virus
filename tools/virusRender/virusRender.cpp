@@ -7,6 +7,7 @@
 //   virusRender --rom rom/firmware.bin --preset 0 --export-syx init.syx
 //   virusRender --rom rom/firmware.bin --syx patch.syx --notes 48,55,60 --hold 2 --tail 2 --out out.wav
 
+#include <algorithm>
 #include <atomic>
 #include <cstdio>
 #include <cstring>
@@ -41,6 +42,7 @@ namespace
 		std::string exportSyx;
 		std::string dumpOut;
 		std::vector<int> notes{60};
+		std::string seq;	// note list file: "<start s> <length s> <note> <velocity>" per line
 		int velocity = 100;
 		double settle = 1.0;	// seconds between preset load and note on
 		double hold = 2.0;
@@ -57,6 +59,8 @@ namespace
 			"  --syx <file>           use a 524-byte Single Dump file\n"
 			"  --export-syx <file>    write the selected single as .syx and exit\n"
 			"  --notes 48,55,60       MIDI notes to hold (default 60)\n"
+			"  --seq <file>           play a note list instead: \"<start s> <length s> <note> <vel>\" per line;\n"
+			"                         --hold is then the end of the last note\n"
 			"  --vel <1-127>          note velocity (default 100)\n"
 			"  --settle <sec>         wait after loading before note on (default 1)\n"
 			"  --hold <sec>           note length (default 2)\n"
@@ -88,6 +92,7 @@ namespace
 			else if(a == "--hold")			_o.hold = std::stod(next());
 			else if(a == "--tail")			_o.tail = std::stod(next());
 			else if(a == "--list")			_o.list = true;
+			else if(a == "--seq")			_o.seq = next();
 			else if(a == "--notes")
 			{
 				_o.notes.clear();
@@ -291,6 +296,36 @@ int main(const int _argc, char* _argv[])
 	if(dsp2)
 		uc->addDSP(*dsp2, false);
 
+	// Note list events, in frames after the first note on
+	struct NoteEvent { uint64_t frame; uint8_t status, note, velocity; };
+	std::vector<NoteEvent> events;
+	if(!o.seq.empty())
+	{
+		std::ifstream f(o.seq);
+		if(!f)
+		{
+			std::cerr << "cannot read " << o.seq << '\n';
+			return 1;
+		}
+		double start, length, end = 0.0;
+		int note, vel;
+		while(f >> start >> length >> note >> vel)
+		{
+			const auto on = static_cast<uint64_t>(start * samplerate);
+			const auto off = static_cast<uint64_t>((start + length) * samplerate);
+			events.push_back({on, 0x90, static_cast<uint8_t>(note), static_cast<uint8_t>(vel)});
+			events.push_back({off, 0x80, static_cast<uint8_t>(note), 0x40});
+			end = std::max(end, start + length);
+		}
+		// at equal frames, note offs first so a repeated note retriggers
+		std::stable_sort(events.begin(), events.end(), [](const NoteEvent& a, const NoteEvent& b)
+		{
+			return a.frame != b.frame ? a.frame < b.frame : a.status < b.status;
+		});
+		o.hold = end;
+	}
+	size_t nextEvent = 0;
+
 	const auto noteOnFrame = static_cast<uint64_t>(o.settle * samplerate);
 	const auto noteOffFrame = noteOnFrame + static_cast<uint64_t>(o.hold * samplerate);
 	const auto endFrame = noteOffFrame + static_cast<uint64_t>(o.tail * samplerate);
@@ -343,11 +378,24 @@ int main(const int _argc, char* _argv[])
 	// Exact-frame note events, also on the DSP thread
 	auto onFrame = [&](const uint64_t _frame)
 	{
-		if(_frame == onAt)
+		if(!events.empty() && _frame >= onAt)
+		{
+			bool sent = false;
+			while(nextEvent < events.size() && onAt + events[nextEvent].frame == _frame)
+			{
+				const auto& e = events[nextEvent++];
+				uc->sendMIDI(SMidiEvent(MidiEventSource::Host, e.status, e.note, e.velocity));
+				sent = true;
+			}
+			if(sent)
+				uc->sendPendingMidiEvents(std::numeric_limits<uint32_t>::max());
+		}
+		if(_frame == onAt && events.empty())
 			sendNotes(0x90, static_cast<uint8_t>(o.velocity));
 		else if(_frame == offAt)
 		{
-			sendNotes(0x80, 0x40);
+			if(events.empty())
+				sendNotes(0x80, 0x40);
 			if(uc->requestSingle(BankNumber::EditBuffer, SINGLE, editBuffer))
 				haveEditBuffer = true;
 		}

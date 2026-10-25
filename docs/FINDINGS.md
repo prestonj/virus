@@ -188,6 +188,25 @@ added at the bottom; each entry says how it was established
 - Gearmulator's `parameterDescriptions_TI.json` is loose JSON (trailing commas,
   one single-quoted string); parse only the `parameterdescriptions` array.
 
+- **Fork deadlock in parallel renders (fixed 2026-10-25).** `render_virus`
+  runs `virusRender` via `subprocess.run` from a thread pool. On macOS that
+  forks, and SciPy's FFT backend (ducc, `pyduccfft`) registers a
+  `pthread_atfork` handler that joins its worker threads. One worker sat in a
+  condition-variable wait, so `fork()` blocked forever with every render
+  thread waiting on children that never started (a translate run hung 13 h at
+  0% CPU, intermittently). Fix: `close_fds=False`, so CPython uses
+  `posix_spawn`, which runs no atfork handlers. Checked by monkeypatching
+  `Popen._posix_spawn`: 100/100 renders spawned that way alongside parallel
+  FFTs. Diagnose hangs with `sample <pid>` (macOS).
+
+- **`virusRender --seq <file>`** plays a note list (`<start s> <length s>
+  <note> <vel>` per line; note offs sort before note ons at the same frame, so
+  repeated notes retrigger). Events fire on the DSP thread at exact frames.
+  A one-note list renders bit-identically to `--notes 60 --hold 2`. OB-Xf
+  equivalent: `render_obxf_seq` processes audio in chunks between events.
+  In the first suite the rhythmic parts' level envelopes lined up within
+  10–40 ms between the synths (Clavinet correlation 0.96).
+
 ## Fitting method (what works)
 
 1. Fixed voice structure translated by hand from the OB-Xf patch.
@@ -233,6 +252,11 @@ added at the bottom; each entry says how it was established
   `obright.syx` = resonance 14, cutoff 40. On this patch the OB character
   came from the filter slope and envelope shape more than from resonance;
   resonance above ~14 moved it away from the OB.
+- Batch 2 (2026-10-24): OBX Clavinet and Pursuit Bright **"fine" as
+  translated** — the first translations accepted with no ear edits (both
+  used the level-gated held-brightness trim). OBX Bass 2: user picked the
+  **low-resonance version** (res 8, cutoff 21) over the fitted res 44 →
+  second patch where the user rejected resonance the fit added.
 
 ## Translation batch 1 (tools/translate.py, 2026-10-24)
 
@@ -300,6 +324,54 @@ added at the bottom; each entry says how it was established
   error 6.77 → 5.24 dB; +12 dB no better). EQ can't fully reproduce OB-Xf's
   filter shape. Sent three variants: body (that mid boost), body+low (plus
   +6 dB low shelf at 82 Hz), sub (Sub Osc triangle, volume 40).
+
+## Translation batch 2 (2026-10-24)
+
+OBX Clavinet, Pursuit Bright, OBX Bass 2. Picked from many OB-Xf patches because
+their `map_structure` notes were free of untranslated features (except Bass 2's
+small EnvToPWAmount 0.104).
+
+| Patch | Amp err | Band err | Cutoff fit → trim | Notes |
+|---|---|---|---|---|
+| OBX Clavinet | 0.53 dB | 3.78 dB | 52 → 51 | pulse duty 0.12 both oscs, 4-pole, res 4, amp sustain 0 |
+| Pursuit Bright | 1.75 dB | 3.57 dB | 39 → 33 | OB-Xf LFO 2 vibrato (1.14 Hz ±9.4 c, osc 2) → Virus LFO 1; 2-pole |
+| OBX Bass 2 | 0.31 dB | 3.69 dB | 23 → 18 → 21 | 5-voice unison, Mono 1; fit chose res 44, **user chose res 8** (cutoff 21) |
+
+- **Held-brightness metric bug (fixed):** the sustain median had no level
+  gate, so on decaying sounds (amp sustain 0) it measured the noise floor
+  after the note died. Bass 2 reported a 21.8-semitone gap. Now only frames
+  within 30 dB of the peak count, and it falls back to attack-only when fewer
+  than 4 sustain frames are loud. Re-trimmed: Bass 2 19 → 18, Clavinet 51
+  (unchanged), Pursuit 34 → 33; all gaps now ≤ 0.3 semitones.
+- **Stage 2 can buy brightness with resonance the OB-Xf patch doesn't have.**
+  Bass 2's OB-Xf resonance is 0.11, but the fit chose 44. A variant with
+  resonance 8 at re-trimmed cutoff 21 scores the same band error (4.94 vs
+  4.96 dB, re-measured after trimming): the resonance wasn't needed. Variant
+  The user chose it: it is now `obx-bass-2`; the fitted one is kept as `obx-bass-2-res44`. Stage-2 resonance is now
+  capped at `60 × FilterResonance + 8` (`resonance_cap` in the report).
+  OB-Xf resonance vs the Virus value per patch: Obright 0.004 → 14, OBX
+  Bass 1 0.024 → 25, Warmth 0.036 → 15, It's an OB-X! 0.212 → 17, Clavinet
+  0 → 4, Pursuit 0.032 → 10, Bass 2 0.112 → 44 (fit) / 8 (chosen). **The fit
+  runs to whatever ceiling it gets:** with cap +16, Bass 2 re-translated to
+  res 23 (the cap) and trimmed cutoff to 7, so a loose cap doesn't help. With cap +8 (= 15) it
+  again pinned at the cap: res 15, cutoff 22 → 12 after trim, band error
+  3.92 dB, vs the user's pick of res 8 / cutoff 21. **In practice the cap
+  *is* the stage-2 resonance**, so its offset decides the result.
+- Pursuit Bright's amp error (1.75 dB) is the highest so far; not yet
+  investigated.
+
+## Virus A/B/C compatibility (looked at, then skipped by the user)
+
+- Single format (from source): A/B/C singles are 256 bytes (pages A + B
+  only) with one checksum, 267-byte dump. Version byte `preset[0]`:
+  0–5 = A (OS 1–3), **6 = B (OS 4)**, **7 = C (OS 6)**, 8 / `0x0C` = TI.
+- Gearmulator's C table (`osirusJucePlugin/parameterDescriptions_C.json`)
+  has every control our patches use at the same page/index **except unison**:
+  TI `0x6F`/120–121 → C page A 97–98. The C table includes Analog 1–4 pole
+  filter modes and the EQ; a Virus **B** probably lacks the analog modes
+  (inferred, unverified), which all our patches rely on.
+- Verifying would need a Virus B/C firmware file for Gearmulator's Osirus.
+  User decided (2026-10-24) to skip Virus B.
 
 ## Open questions / next steps
 

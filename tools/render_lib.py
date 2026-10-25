@@ -34,7 +34,20 @@ def render_virus(patch, notes=(60,), hold=1.5, tail=1.5, vel=100):
         patch.save(syx)
         subprocess.run([str(VIRUS), "--rom", str(ROM), "--syx", syx, "--notes", ",".join(map(str, notes)),
                         "--vel", str(vel), "--hold", str(hold), "--tail", str(tail), "--out", wav],
-                       check=True, capture_output=True)
+                       check=True, capture_output=True, close_fds=False)  # posix_spawn, not fork: see FINDINGS
+        _, data = wavfile.read(wav)
+    return data.astype(np.float64).mean(axis=1)
+
+
+def render_virus_seq(patch, seq, tail=2.0):
+    """Play a note list: seq = [(start s, length s, note, velocity), ...] from the first note on."""
+    with tempfile.TemporaryDirectory() as tmp:
+        syx, wav, txt = (os.path.join(tmp, f) for f in ("p.syx", "p.wav", "p.seq"))
+        patch.save(syx)
+        with open(txt, "w") as f:
+            f.writelines(f"{t:.6f} {d:.6f} {n} {v}\n" for t, d, n, v in seq)
+        subprocess.run([str(VIRUS), "--rom", str(ROM), "--syx", syx, "--seq", txt, "--tail", str(tail),
+                        "--out", wav], check=True, capture_output=True, close_fds=False)
         _, data = wavfile.read(wav)
     return data.astype(np.float64).mean(axis=1)
 
@@ -123,3 +136,26 @@ def centroid_loss(x, y, level_x, gate_db=-45):
     lev = np.array([level_x[min(len(level_x) - 1, int(i * hop))] for i in range(n)])
     mask = lev > level_x.max() + gate_db
     return float(np.mean(np.abs(cx[:n] - cy[:n])[mask])) if mask.any() else 0.0
+
+
+def render_obxf_seq(name, seq, tail=2.0, slop=True):
+    """OB-Xf version of render_virus_seq, sample-accurate."""
+    eng = obxfpy.ObxfEngine(float(RATE))
+    eng.load_patch(str(find_patch(name)))
+    if not slop:
+        for p in SLOP_PARAMS:
+            eng.set_param(p, 0.0)
+    eng.process(RATE // 2)
+    events = sorted([(int(t * RATE), 1, n, v) for t, d, n, v in seq] +
+                    [(int((t + d) * RATE), 0, n, 64) for t, d, n, v in seq])  # offs first at equal times
+    end = max(f for f, *_ in events) + int(tail * RATE)
+    out, pos = [], 0
+    for f, on, n, v in events + [(end, None, 0, 0)]:
+        if f > pos:
+            out.append(eng.process(f - pos))
+            pos = f
+        if on == 1:
+            eng.note_on(n, v)
+        elif on == 0:
+            eng.note_off(n, v)
+    return (np.concatenate([o[0] for o in out]) + np.concatenate([o[1] for o in out])) / 2

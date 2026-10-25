@@ -1,0 +1,105 @@
+{
+ "reference": "Pursuit Bright",
+ "hold": 2.0,
+ "tail": 1.5,
+ "mapping_notes": [
+  "osc2 detune 5.2 cents",
+  "OB-Xf LFO2 1.14 Hz, +/-9.4 c on osc1 +0 / osc2 +1 -> Virus LFO1"
+ ],
+ "amp_level_error_db": 1.75,
+ "band_shape_error_db": 3.57,
+ "cutoff_fit": 39,
+ "cutoff_trimmed": 33,
+ "attack_brightness_gap_semitones": -0.22,
+ "changes_from_init": {
+  "Amp Env Attack": [
+   0,
+   27
+  ],
+  "Amp Env Decay": [
+   127,
+   81
+  ],
+  "Amp Env Release": [
+   4,
+   38
+  ],
+  "Amp Env Sustain": [
+   127,
+   97
+  ],
+  "Cutoff": [
+   127,
+   33
+  ],
+  "Filter Balance": [
+   64,
+   0
+  ],
+  "Filter Env Attack": [
+   0,
+   31
+  ],
+  "Filter Env Decay": [
+   46,
+   86
+  ],
+  "Filter Env Release": [
+   127,
+   16
+  ],
+  "Filter Env Sustain": [
+   0,
+   36
+  ],
+  "Filter Env Sustain Time": [
+   64,
+   77
+  ],
+  "Filter1 Env Amt": [
+   0,
+   98
+  ],
+  "Filter1 Keyfollow": [
+   64,
+   87
+  ],
+  "Filter1 Mode": [
+   0,
+   5
+  ],
+  "Filter1 Resonance": [
+   0,
+   10
+  ],
+  "Flt1 EnvAmt Velocity": [
+   64,
+   44
+  ],
+  "Lfo1 Rate": [
+   48,
+   65
+  ],
+  "Lfo1 Shape": [
+   1,
+   0
+  ],
+  "Osc Balance": [
+   64,
+   46
+  ],
+  "Osc2 Detune": [
+   32,
+   50
+  ],
+  "Osc2 Lfo1 Amount": [
+   64,
+   72
+  ],
+  "Transpose": [
+   64,
+   52
+  ]
+ },
+ "verdict": "User: fine as translated (2026-10-24)."
+}

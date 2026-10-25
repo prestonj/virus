@@ -1,0 +1,103 @@
+{
+ "reference": "OBX Bass 2",
+ "hold": 2.0,
+ "tail": 1.5,
+ "mapping_notes": [
+  "osc1: pulse, duty 0.500",
+  "osc2 detune 0.1 cents",
+  "unison 5 voices (Virus 5), OB-Xf spread +/-21 c random -> even width 34 c",
+  "EnvToPWAmount=0.104 not translated"
+ ],
+ "amp_level_error_db": 0.31,
+ "band_shape_error_db": 3.69,
+ "cutoff_fit": 23,
+ "cutoff_trimmed": 18,
+ "attack_brightness_gap_semitones": 0.28,
+ "changes_from_init": {
+  "Amp Env Attack": [
+   0,
+   4
+  ],
+  "Amp Env Decay": [
+   127,
+   37
+  ],
+  "Amp Env Release": [
+   4,
+   50
+  ],
+  "Amp Env Sustain": [
+   127,
+   0
+  ],
+  "Cutoff": [
+   127,
+   18
+  ],
+  "Filter Balance": [
+   64,
+   0
+  ],
+  "Filter Env Decay": [
+   46,
+   50
+  ],
+  "Filter Env Release": [
+   127,
+   30
+  ],
+  "Filter1 Env Amt": [
+   0,
+   73
+  ],
+  "Filter1 Keyfollow": [
+   64,
+   87
+  ],
+  "Filter1 Mode": [
+   0,
+   7
+  ],
+  "Filter1 Resonance": [
+   0,
+   44
+  ],
+  "Flt1 EnvAmt Velocity": [
+   64,
+   34
+  ],
+  "Key Mode": [
+   0,
+   1
+  ],
+  "Osc Balance": [
+   64,
+   48
+  ],
+  "Osc1 Semitone": [
+   64,
+   52
+  ],
+  "Osc1 Shape": [
+   64,
+   127
+  ],
+  "Osc2 Detune": [
+   32,
+   5
+  ],
+  "Transpose": [
+   64,
+   52
+  ],
+  "Unison Detune": [
+   48,
+   79
+  ],
+  "Unison Mode": [
+   0,
+   4
+  ]
+ },
+ "verdict": "Not used: the user chose the low-resonance version (patches/obx-bass-2)."
+}

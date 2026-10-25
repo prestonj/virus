@@ -15,9 +15,10 @@ import sys
 import numpy as np
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-from ab_render import EXAMPLES, ab  # noqa: E402
+from ab_render import EXAMPLES  # noqa: E402
+from demo import demo  # noqa: E402
 from fit import coordinate_search, level_fit_loss, obxf_band_target, obxf_target, spectral_fit_loss_multi  # noqa: E402
-from render_lib import RATE, ROOT, centroid, render_obxf, render_virus_many  # noqa: E402
+from render_lib import RATE, ROOT, centroid, level_db, render_obxf, render_virus_many  # noqa: E402
 from virus_patch import Patch  # noqa: E402
 
 CAL = json.loads((ROOT / "tools" / "calibration.json").read_text())
@@ -117,11 +118,16 @@ def map_structure(d, name):
         p["Key Mode"] = 1  # OB-Xf unison stacks every voice on one note: mono
         notes.append(f"unison {n} voices (Virus {n_v}), OB-Xf spread +/-{s:.0f} c random -> even width {width:.0f} c")
 
-    # LFO 1 -> oscillator pitch (vibrato / opposed-pitch shimmer)
+    # LFO -> oscillator pitch (vibrato / opposed-pitch shimmer). OB-Xf's LFO 1 first; its per-voice
+    # LFO 2 goes onto the Virus LFO 1 when LFO 1 doesn't touch pitch (same rate/amount scales).
+    lfo = "LFO1"
     o1, o2 = remap_lfo_dest(d["LFO1ToOsc1Pitch"]), remap_lfo_dest(d["LFO1ToOsc2Pitch"])
+    if not (o1 or o2):
+        lfo = "LFO2"
+        o1, o2 = remap_lfo_dest(d["LFO2ToOsc1Pitch"]), remap_lfo_dest(d["LFO2ToOsc2Pitch"])
     if o1 or o2:
-        hz = logsc(d["LFO1Rate"], 0.0, 250.0, 3775.0)
-        cents = 100 * logsc(logsc(d["LFO1ModAmount1"], 0.0, 1.0, 60.0), 0.0, 60.0, 10.0)
+        hz = logsc(d[f"{lfo}Rate"], 0.0, 250.0, 3775.0)
+        cents = 100 * logsc(logsc(d[f"{lfo}ModAmount1"], 0.0, 1.0, 60.0), 0.0, 60.0, 10.0)
         p["Lfo1 Rate"] = inverse({k: v for k, v in CAL["virus_lfo1_rate_hz"].items() if int(k) >= 40}, hz)
         p["Lfo1 Shape"] = 0  # sine
         amt = inverse(CAL["virus_lfo1_osc_depth_cents"], cents) - 64
@@ -129,9 +135,14 @@ def map_structure(d, name):
             p["Osc1 Lfo1 Amount"] = 64 + o1 * amt
         if o2:
             p["Osc2 Lfo1 Amount"] = 64 + o2 * amt
-        notes.append(f"LFO1 {hz:.2f} Hz, +/-{cents:.1f} c on osc1 {o1:+d} / osc2 {o2:+d}")
+        notes.append(f"OB-Xf {lfo} {hz:.2f} Hz, +/-{cents:.1f} c on osc1 {o1:+d} / osc2 {o2:+d} -> Virus LFO1")
     for k in ("LFO1ToFilterCutoff", "LFO1ToOsc1PW", "LFO1ToOsc2PW", "LFO2ToFilterCutoff", "LFO2ToOsc1Pitch",
               "LFO2ToOsc2Pitch", "LFO2ToOsc1PW", "LFO2ToOsc2PW", "EnvToPitchAmount", "EnvToPWAmount", "Portamento"):
+        if lfo == "LFO2" and k in ("LFO2ToOsc1Pitch", "LFO2ToOsc2Pitch"):
+            continue
+        if lfo == "LFO1" and k in ("LFO2ToOsc1Pitch", "LFO2ToOsc2Pitch") and d.get(k, 0) > 0.01:
+            notes.append(f"{k} not translated (Virus LFO1 already used for OB-Xf LFO1)")
+            continue
         if d.get(k, 0) > 0.01:
             notes.append(f"{k}={d[k]:.3f} not translated")
     return p, notes
@@ -146,19 +157,33 @@ def timing(d):
     return round(hold, 1), round(tail, 1)
 
 
+def held_brightness(x, hold):
+    """Brightness (octaves) of the held note: mean of the attack (0-0.3 s) and sustain medians.
+
+    Matching the attack alone left a slow pad (Warmth) ~3.5 semitones dark in the sustain.
+    Only frames within 30 dB of the peak count: a plucked/bass note that has decayed
+    to silence otherwise measures the noise floor (OBX Bass 2 read a 22-semitone gap).
+    """
+    c = centroid(x)
+    lev = level_db(x, win_ms=512 * 1000 / RATE)
+    loud = lev[: len(c)] > lev.max() - 30
+    a, h = int(0.3 * RATE / 512), int(hold * RATE / 512)
+    att, sus = c[:a][loud[:a]], c[a:h][loud[a:h]]
+    return np.median(att) if len(sus) < 4 else (np.median(att) + np.median(sus)) / 2
+
+
 def attack_brightness(patches_or_ref, examples, hold, tail, ref_name=None):
-    """Median brightness (octaves) over the first 0.3 s, averaged across examples."""
-    n = int(0.3 * RATE / 512)
+    """Held-note brightness (see held_brightness), averaged across examples."""
     if ref_name:
         vals = []
         for notes in examples:
             xs = [render_obxf(ref_name, notes=notes, hold=hold, tail=tail) for _ in range(3)]
-            vals.append(np.mean([np.median(centroid(x)[:n]) for x in xs]))
+            vals.append(np.mean([held_brightness(x, hold) for x in xs]))
         return float(np.mean(vals))
     tot = np.zeros(len(patches_or_ref))
     for notes in examples:
         for i, x in enumerate(render_virus_many(patches_or_ref, notes=notes, hold=hold, tail=tail)):
-            tot[i] += np.median(centroid(x)[:n])
+            tot[i] += held_brightness(x, hold)
     return tot / len(examples)
 
 
@@ -193,16 +218,21 @@ def translate(name, slug, hold=None, tail=None, log=print):
     p.set(Cutoff=int(20 + 90 * d["FilterCutoff"]), Filter1_Env_Amt=int(127 * min(1, d["FilterEnvAmount"] * 1.2)),
           Filter1_Resonance=int(60 * d["FilterResonance"]), Filter_Env_Attack=10, Filter_Env_Decay=80,
           Filter_Env_Sustain=int(127 * d["FilterEnvSustain"]), Filter_Env_Release=30)
-    free = {"Cutoff": (0, 127), "Filter1 Env Amt": (0, 127), "Filter1 Resonance": (0, 90),
+    # Resonance stays near OB-Xf's own: the fit buys brightness with resonance the OB doesn't have
+    # (OBX Bass 2: 44 vs OB-Xf ~7, user chose 8). The fit runs to whatever ceiling it gets
+    # (cap +16 -> res 23 with cutoff 7), so keep the cap tight.
+    res_cap = min(90, round(60 * d["FilterResonance"]) + 8)
+    report["resonance_cap"] = res_cap
+    free = {"Cutoff": (0, 127), "Filter1 Env Amt": (0, 127), "Filter1 Resonance": (0, res_cap),
             "Filter1 Keyfollow": (64, 127), "Filter Env Attack": (0, 127), "Filter Env Decay": (0, 127),
             "Filter Env Sustain": (0, 127), "Filter Env Sustain Time": (0, 127), "Filter Env Release": (0, 127)}
     p, l2 = coordinate_search(p, free, spectral_fit_loss_multi(targets), start_step=16, max_rounds=40, log=log)
     report["band_shape_error_db"] = round(l2, 2)
 
-    # Stage 3: trim cutoff so the first 0.3 s is as bright as OB-Xf (fits tend to end up brighter;
-    # the user picked the attack-matched "dark" Obright by ear)
+    # Stage 3: trim cutoff so the held note is as bright as OB-Xf, attack and sustain weighted
+    # equally (Obright: attack-matched won by ear; Warmth/OBX Bass 1: user then asked for brighter)
     ref_b = attack_brightness(None, examples, hold, tail, ref_name=name)
-    cuts = list(range(max(0, p["Cutoff"] - 12), min(127, p["Cutoff"] + 6) + 1))
+    cuts = list(range(max(0, p["Cutoff"] - 12), min(127, p["Cutoff"] + 12) + 1))
     bs = attack_brightness([p.copy().set(Cutoff=c) for c in cuts], examples, hold, tail)
     i = int(np.argmin(np.abs(bs - ref_b)))
     report["cutoff_fit"], report["cutoff_trimmed"] = p["Cutoff"], cuts[i]
@@ -214,7 +244,7 @@ def translate(name, slug, hold=None, tail=None, log=print):
     report["changes_from_init"] = {k: [a, b] for k, (a, b) in sorted(p.diff(Patch.from_syx()).items())}
     (ROOT / "patches" / f"{slug}.json").write_text(json.dumps(report, indent=1))
     log(f"wrote {out}  amp {l1:.2f} dB, bands {l2:.2f} dB, cutoff {report['cutoff_fit']} -> {cuts[i]}")
-    ab(name, out, ROOT / "renders" / slug / "listen", hold=hold, tail=tail)
+    demo(slug, ref=name)  # one melodic phrase, OB-Xf then Virus (tools/demo.py)
     return p, report
 
 

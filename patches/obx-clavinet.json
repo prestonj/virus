@@ -1,0 +1,102 @@
+{
+ "reference": "OBX Clavinet",
+ "hold": 2.0,
+ "tail": 1.5,
+ "mapping_notes": [
+  "osc1: pulse, duty 0.120",
+  "osc2: pulse, duty 0.120",
+  "osc2 detune 3.1 cents"
+ ],
+ "amp_level_error_db": 0.53,
+ "band_shape_error_db": 3.78,
+ "cutoff_fit": 52,
+ "cutoff_trimmed": 51,
+ "attack_brightness_gap_semitones": 0.13,
+ "changes_from_init": {
+  "Amp Env Attack": [
+   0,
+   37
+  ],
+  "Amp Env Decay": [
+   127,
+   65
+  ],
+  "Amp Env Release": [
+   4,
+   0
+  ],
+  "Amp Env Sustain": [
+   127,
+   0
+  ],
+  "Cutoff": [
+   127,
+   51
+  ],
+  "Filter Balance": [
+   64,
+   0
+  ],
+  "Filter Env Attack": [
+   0,
+   6
+  ],
+  "Filter Env Decay": [
+   46,
+   67
+  ],
+  "Filter Env Release": [
+   127,
+   30
+  ],
+  "Filter Env Sustain": [
+   0,
+   46
+  ],
+  "Filter Env Sustain Time": [
+   64,
+   60
+  ],
+  "Filter1 Env Amt": [
+   0,
+   65
+  ],
+  "Filter1 Keyfollow": [
+   64,
+   91
+  ],
+  "Filter1 Mode": [
+   0,
+   7
+  ],
+  "Filter1 Resonance": [
+   0,
+   4
+  ],
+  "Flt1 EnvAmt Velocity": [
+   64,
+   61
+  ],
+  "Osc1 Pulsewidth": [
+   0,
+   97
+  ],
+  "Osc1 Shape": [
+   64,
+   127
+  ],
+  "Osc2 Detune": [
+   32,
+   37
+  ],
+  "Osc2 Pulsewidth": [
+   0,
+   97
+  ],
+  "Osc2 Shape": [
+   64,
+   127
+  ]
+ },
+ "verdict": "User: fine as translated (2026-10-24)."
+}

@@ -44,6 +44,11 @@ $R --rom rom/firmware.bin --syx x.syx --notes 48,55,60,64 \
 .venv/bin/python tools/analyze.py renders/x.wav --png renders/x.png
 ```
 
+`--seq notes.txt` plays a note list instead of one held chord (`<start s>
+<length s> <note> <velocity>` per line). `tools/demo.py` uses it to render a
+short phrase per patch, OB-Xf then Virus, into one listening file
+(`renders/suite_AB.wav`).
+
 `--dump-out` saves the edit buffer as the firmware holds it after loading.
 ROM singles in the older format come back upgraded to TI format (version
 byte `0C`); `patches/reference/init-ti.syx` is the upgraded `-INIT-` and is
