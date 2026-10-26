@@ -1,0 +1,111 @@
+{
+ "reference": "Steel String Guitar 2",
+ "hold": 2.0,
+ "tail": 1.5,
+ "mapping_notes": [
+  "osc2: pulse, duty 0.367",
+  "osc2 detune 0.1 cents",
+  "cross-mod +/-16.0 st -> Virus FM 31, osc 2 raised +2.41 st",
+  "OscBrightness=0.168 not translated"
+ ],
+ "amp_level_error_db": 0.56,
+ "resonance_cap": 8,
+ "band_shape_error_db": 3.51,
+ "cutoff_fit": 47,
+ "cutoff_trimmed": 51,
+ "attack_brightness_gap_semitones": 0.2,
+ "changes_from_init": {
+  "Amp Env Decay": [
+   127,
+   99
+  ],
+  "Amp Env Release": [
+   4,
+   18
+  ],
+  "Amp Env Sustain": [
+   127,
+   0
+  ],
+  "Amp Velocity": [
+   64,
+   104
+  ],
+  "Cutoff": [
+   127,
+   51
+  ],
+  "Filter Balance": [
+   64,
+   0
+  ],
+  "Filter Env Attack": [
+   0,
+   6
+  ],
+  "Filter Env Decay": [
+   46,
+   80
+  ],
+  "Filter Env Release": [
+   127,
+   24
+  ],
+  "Filter Env Sustain": [
+   0,
+   22
+  ],
+  "Filter Env Sustain Time": [
+   64,
+   32
+  ],
+  "Filter1 Env Amt": [
+   0,
+   92
+  ],
+  "Filter1 Keyfollow": [
+   64,
+   68
+  ],
+  "Filter1 Mode": [
+   0,
+   7
+  ],
+  "Flt1 EnvAmt Velocity": [
+   64,
+   45
+  ],
+  "Osc Balance": [
+   64,
+   57
+  ],
+  "Osc FM Mode": [
+   0,
+   2
+  ],
+  "Osc2 Detune": [
+   32,
+   127
+  ],
+  "Osc2 FM Amount": [
+   0,
+   31
+  ],
+  "Osc2 Pulsewidth": [
+   0,
+   34
+  ],
+  "Osc2 Semitone": [
+   64,
+   80
+  ],
+  "Osc2 Shape": [
+   64,
+   127
+  ],
+  "Osc2 Sync": [
+   0,
+   1
+  ]
+ }
+}

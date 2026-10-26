@@ -1,0 +1,128 @@
+{
+ "reference": "Wrong Organ",
+ "hold": 2.0,
+ "tail": 1.5,
+ "mapping_notes": [
+  "osc1: triangle",
+  "osc2: triangle",
+  "osc2 detune 0.1 cents",
+  "cross-mod +/-1.5 st -> Virus FM 4, osc 2 raised +0.02 st",
+  "OB-Xf LFO2 4.94 Hz, +/-12.5 c on osc1 +0 / osc2 +1 -> Virus LFO1"
+ ],
+ "amp_level_error_db": 0.93,
+ "resonance_cap": 20,
+ "band_shape_error_db": 2.27,
+ "cutoff_fit": 20,
+ "cutoff_trimmed": 28,
+ "attack_brightness_gap_semitones": -0.48,
+ "changes_from_init": {
+  "Amp Env Attack": [
+   0,
+   31
+  ],
+  "Amp Env Decay": [
+   127,
+   80
+  ],
+  "Amp Env Release": [
+   4,
+   0
+  ],
+  "Amp Env Sustain": [
+   127,
+   126
+  ],
+  "Amp Velocity": [
+   64,
+   87
+  ],
+  "Cutoff": [
+   127,
+   28
+  ],
+  "Filter Balance": [
+   64,
+   0
+  ],
+  "Filter Env Attack": [
+   0,
+   7
+  ],
+  "Filter Env Decay": [
+   46,
+   80
+  ],
+  "Filter Env Release": [
+   127,
+   30
+  ],
+  "Filter Env Sustain": [
+   0,
+   127
+  ],
+  "Filter1 Env Amt": [
+   0,
+   111
+  ],
+  "Filter1 Keyfollow": [
+   64,
+   69
+  ],
+  "Filter1 Mode": [
+   0,
+   5
+  ],
+  "Filter1 Resonance": [
+   0,
+   20
+  ],
+  "Flt1 EnvAmt Velocity": [
+   64,
+   51
+  ],
+  "Lfo1 Rate": [
+   48,
+   96
+  ],
+  "Lfo1 Shape": [
+   1,
+   0
+  ],
+  "Osc Balance": [
+   64,
+   47
+  ],
+  "Osc FM Mode": [
+   0,
+   2
+  ],
+  "Osc1 Shape": [
+   64,
+   0
+  ],
+  "Osc1 Wave Select": [
+   0,
+   1
+  ],
+  "Osc2 FM Amount": [
+   0,
+   4
+  ],
+  "Osc2 Lfo1 Amount": [
+   64,
+   73
+  ],
+  "Osc2 Semitone": [
+   64,
+   76
+  ],
+  "Osc2 Shape": [
+   64,
+   0
+  ],
+  "Osc2 Wave Select": [
+   0,
+   1
+  ]
+ }
+}

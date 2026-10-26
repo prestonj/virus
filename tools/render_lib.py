@@ -59,7 +59,8 @@ def render_virus_many(patches, **kw):
 
 def render_obxf(name, overrides=None, notes=(60,), hold=1.5, tail=1.5, vel=100, slop=False):
     eng = obxfpy.ObxfEngine(float(RATE))
-    eng.load_patch(str(find_patch(name)))
+    if name:  # None = the engine's default patch: one saw, filter open, no modulation
+        eng.load_patch(str(find_patch(name)))
     if not slop:
         for p in SLOP_PARAMS:
             eng.set_param(p, 0.0)
@@ -138,13 +139,16 @@ def centroid_loss(x, y, level_x, gate_db=-45):
     return float(np.mean(np.abs(cx[:n] - cy[:n])[mask])) if mask.any() else 0.0
 
 
-def render_obxf_seq(name, seq, tail=2.0, slop=True):
-    """OB-Xf version of render_virus_seq, sample-accurate."""
+def render_obxf_seq(name, seq, tail=2.0, slop=True, overrides=None):
+    """OB-Xf version of render_virus_seq, sample-accurate. name None = default patch (see render_obxf)."""
     eng = obxfpy.ObxfEngine(float(RATE))
-    eng.load_patch(str(find_patch(name)))
+    if name:
+        eng.load_patch(str(find_patch(name)))
     if not slop:
         for p in SLOP_PARAMS:
             eng.set_param(p, 0.0)
+    for k, v in (overrides or {}).items():
+        eng.set_param(k, v)
     eng.process(RATE // 2)
     events = sorted([(int(t * RATE), 1, n, v) for t, d, n, v in seq] +
                     [(int((t + d) * RATE), 0, n, 64) for t, d, n, v in seq])  # offs first at equal times

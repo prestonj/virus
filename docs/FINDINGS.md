@@ -360,6 +360,234 @@ small EnvToPWAmount 0.104).
 - Pursuit Bright's amp error (1.75 dB) is the highest so far; not yet
   investigated.
 
+## Unsupported OB-Xf features (scan 2026-10-25)
+
+`tools/scan_obxf.py` runs `map_structure` on all 492 factory patches. Only 6 are
+clean (J106 Brass, J60 Brass, It's an OB-X!, Smoothful, Glockenspiel, Warmth).
+"Uses" = patches using the feature; "alone" = patches it is the only blocker
+for. Virus routes are candidates from the parameter list, **not yet measured**.
+
+| Feature | Uses | Alone | Kind | Candidate Virus route |
+|---|---:|---:|---|---|
+| Cross-mod (osc 1 → osc 2 FM) | 324 | 3 | **mapped 2026-10-25** | Osc FM Mode Wave + Osc2 FM Amount (see Cross-mod) |
+| Ring mod | 265 | 1 | needs mapping | Ringmodulator Volume |
+| Non-LP filter (2-pole notch/HP morph, Xpander modes) | 240 | 3 | needs mapping | digital filter modes HP/BP/BS; analog modes are LP only |
+| OscBrightness | 210 | 6 | probably absorbed | static tone control; Bass 1/2 and Clavinet (all 0.0) were accepted |
+| Noise | 196 | 0 | needs mapping | Noise Volume + Noise Color (Bass 2's 0.04 was accepted unmapped) |
+| Saw + pulse on one osc | 173 | 1 | needs workaround | Osc 3, or osc 2 at osc 1's pitch |
+| Envelope → PW | 149 | 0 | needs mapping | mod matrix (Filter Env → PW) |
+| LFO 1 / LFO 2 → cutoff | 134 / 109 | 0 / 1 | needs mapping | Lfo2 → Cutoff1 Lfo2 Amount |
+| Envelope → pitch | 131 | 0 | needs mapping | Osc2 Filt Env Amt (osc 2 only), mod matrix for both |
+| EnvLegatoMode (mono patches) | 112 | 3 | needs mapping | Key Mode (Mono 1–4 legato variants) |
+| Non-default LFO waveform | 102 / 36 | 0 / 1 | needs mapping | Lfo Shape; OB-Xf Wave1–3 meaning still to be checked |
+| Portamento | 100 | 1 | needs mapping | Portamento Time (scale to measure) |
+| LFO → PW (both LFOs) | 54–94 | 0 | needs mapping | PW Lfo1 Amount (both oscs), mod matrix |
+| Filter2PolePush | 77 | 3 | probably absorbed | drive in the 2-pole filter; check |
+| Filter2PoleBPBlend | 54 | 0 | needs mapping | band-pass blend; digital BP mode |
+| LFO → volume | 55 / 52 | 1 / 0 | needs mapping | LFO assign → amp/volume |
+| FilterEnvInvert | 44 | 0 | needs mapping | Filter1 Env Polarity |
+| LFO 2 → pitch when LFO 1 is also on pitch | 39–43 | 0 | needs mapping | Lfo3 (osc pitch) or Lfo2 assign |
+
+Ignored on purpose (not sound design, or not renderable in mono A/B):
+voice pan (stereo spread), slop/analog drift, pitch-bend ranges and
+BendOsc2Only, mod-wheel vibrato, polyphony, voice reassign, note priority,
+HQ mode, patch volume (we loudness-match).
+
+The first five accepted patches carry features now flagged: OscBrightness 0
+(Bass 1, Bass 2, Clavinet), noise 0.04 (Bass 2), Pursuit's LFO 2 waveform,
+Obright's small filter-mode value. Small static amounts get absorbed by the
+filter fit; flags are worth checking but don't block on their own.
+
+## Cross-mod → Virus FM (measured 2026-10-25)
+
+- **OB-Xf cross-mod is osc 1 → osc 2, exponential.** Code: osc 2 pitch (semitones) +=
+  osc1out × OscCrossmod × 48, and osc 1's output swings ±0.5 for saw, triangle and
+  pulse alike, so **peak deviation = 24 × OscCrossmod semitones**. A slow-modulator
+  trace (osc 1 at 8 Hz, osc 2's pitch tracked) is symmetric in cents: ±24 c per 0.01.
+  Osc 1 keeps modulating at Osc1Mix 0.
+- **Virus FM is osc 1 → osc 2 too, linear in Hz**: ~2.95 % of the carrier frequency
+  per step of Osc2 FM Amount (amount 8: +23.8 % / −23.0 %), the same for any osc 1
+  wave in mode **Wave**. Mode **Triangle** measures the same as Wave with a
+  triangle osc 1. **Pos Triangle** bends only upward. It is real FM, not phase
+  modulation (the trace follows the modulator, not its slope). **It clamps**: above
+  amount ~64 the swing stops growing (about −83 % … +135 %).
+- **Exponential FM raises the carrier's average pitch; linear FM doesn't.** OB-Xf's
+  osc 2 averages 2^(48·xmod·osc1out/12) × its pitch: × sinh(a)/a for saw/triangle
+  and × cosh(a) for a 50 % pulse, with a = D·ln2/12 (general pulse:
+  pw·2^(k(pw−1)/12) + (1−pw)·2^(k·pw/12), k = 48·xmod). Tubular Bells (pulse,
+  ±11.4 st) rises **+3.5 st**: untranslated, every Virus partial was misplaced
+  (band error 13.95 dB). `translate.set_osc2_pitch` raises the Virus osc 2 by
+  the shift (semitones + Osc2 Detune). Bell partials then land within ~1 %
+  (Virus 195/504/1198/1511/1900/2598 Hz vs OB-Xf 189/509/1207/1529/1905/2605).
+- Small-depth equivalence: Virus amount ≈ sinh(D·ln2/12) / 0.0295 for OB-Xf peak
+  D semitones. Audio-rate tables (calibrated with the shift applied):
+  saw/triangle 0.1 → 4, 0.25 → 17, 0.5 → 24, 0.85 → 36; pulse 0.1 → 14,
+  0.25 → 20, 0.5 → 28, 0.85 → 32. Before the shift was applied, pulse seemed
+  to need 1.5–2× saw; most of that was the Virus imitating the pitch shift.
+- Aggregating calibration runs: with only two runs per point, take the
+  better-fitting one. A median of two let a 3.9 dB outlier (56) set the pulse
+  table to 42 from 0.5 up, and monotonic smoothing carried it on.
+- OB-Xf **Tune** is ±1 semitone (`v·2−1`). 5 factory patches use it. The Virus has
+  no patch fine tune, so the translator notes it and doesn't map it.
+- Measuring audio-rate FM: compare each synth's *change* in harmonic levels from
+  its own unmodulated sound. Absolute spectra are dominated by the ~2 dB difference
+  between the two triangle waves and gave noisy answers. A saw carrier at 1:1 is a
+  bad probe: FM keeps a dense saw-like series on both synths, so the loss is flat.
+  Use a triangle carrier, 5 cents detune to average the 1:1 phase.
+- Virus FM on a saw carrier works (slow trace shows the same deviation) but
+  changes a 1:1 saw spectrum little at audio rate, as on OB-Xf.
+- **Triangle oscillators were silently translated as saw** (OB-Xf: neither saw nor
+  pulse on = triangle). Now Virus Shape 0 + Wave Select 1. 80 cross-mod patches use
+  a triangle osc 1.
+
+## Cross-mod test patches (2026-10-25)
+
+Translated with cross-mod mapping + carrier shift; demo `renders/xmod_suite_AB.wav`.
+
+| Patch | Cross-mod | Virus FM / osc 2 shift | Amp err | Band err | Cutoff |
+|---|---|---|---|---|---|
+| Tubular Bells | pulse, ±11.4 st | 28 / +3.52 st | 0.63 | 11.24 (13.95 before the shift) | 84 → 79 |
+| Wrong Organ | triangle, ±1.5 st | 4 / +0.02 st | 0.93 | 2.27 | 20 → 28 |
+| Rock Unison | pulse 38 %, ±4.6 st, sync, LFO 1 ±810 c on osc 2 | 18 / +0.59 st | 2.92 | 6.47 | 81 → 76 |
+| Steel String Guitar 2 | saw, ±16 st, sync | 31 / +2.41 st | 0.56 | 3.51 | 47 → 51 |
+
+Tubular Bells' partial frequencies match after the shift (see Cross-mod), but its
+band error stays high. **User: "a bit of a miss — attack a bit too slow and the
+FM doesn't sound as nice."**
+- Attack: the stage-1 level fit gave amp attack 66 (~80 ms rise) for OB-Xf's 0
+  (2.7 ms). Attack is now translated from measured rise times (below) and no
+  longer fitted; filter-envelope attack likewise. Bells → 25.
+- FM depth: partial-level matching per note disagreed wildly (best 52 at note 48,
+  28 at note 60 with filters open, 36 at note 60 with the patch filter). A
+  synthetic sweep showed no consistent keyboard trend, so the metric is the
+  problem: sideband levels rise and fall with depth, giving several minima.
+  Three spectral probes (band shape, harmonic bins, partial levels) all proved
+  unreliable for choosing FM depth. Variants FM 28/36/44/52: user picked **28,
+  "closest but not very close"**.
+- **Root cause: the Virus can't FM with a square.** Slow pitch traces show the
+  modulator's shape. OB-Xf pulse cross-mod jumps between two pitches (92 % of
+  the time at the extremes). The Virus in mode Wave with osc 1 pulse, saw or
+  triangle, and in mode Triangle, gives an evenly spread (ramp/triangle-like)
+  modulation. Only a "wave" osc 1 changes the shape (sine). None of the 64 Virus
+  waves is square-like (closest: wave 1, the triangle). A sine modulator at the
+  square's fundamental made the bells far worse (33 dB partial error; energy
+  moved to other partials, likely an offset in the sine path, not followed up).
+  So **pulse-modulator cross-mod is approximate**; the translator says so.
+- Confirmed at audio rate (2026-10-25, the user questioned it): osc 1 alone at
+  Shape 127 is a real pulse (even harmonics at −110 dB), yet osc 2's FM spectrum
+  (sine carrier, amount 12, mode Wave) is **identical to the dB** for osc 1 saw
+  and osc 1 pulse; a triangle osc 1 (Shape 0, wave 1) differs. So in mode Wave
+  the classic oscillator always modulates with its underlying saw, and only the
+  wave shapes pass their own waveform. Mode Triangle ignores osc 1's shape
+  entirely. Not yet checked on the hardware: osc 2 sine, balance full osc 2,
+  FM Wave ~30, switching osc 1 saw → pulse should change nothing.
+  Saw/triangle modulators match in shape.
+- The Virus itself follows FM theory exactly: sine on sine at fc/fm = 3, the
+  sidebands sit within 1–3 dB of |J_k(β)| with β = 0.0295 × amount × fc/fm.
+- The partial-level FM fit stage was removed again (no reliable probe).
+
+## Envelope attack times (measured 2026-10-25)
+
+10–90 % rise of the amp envelope (`calibrate.py attack` → `virus_attack_ms`,
+`obxf_attack_ms`). Virus: 0–8 → 0.7 ms, 24 → 2.5, 32 → 4.2, 40 → 9.3, 48 → 17,
+56 → 35, 64 → 70, 72 → 140, 80 → 280, then doubling every 8 steps. OB-Xf:
+0 → 2.7 ms, 0.02 → 9.7, 0.05 → 21, 0.1 → 46, 0.2 → 130, 0.3 → 295, 0.5 → 1270.
+Curve shapes (time to −20/−10/−6/−3/−1 dB) agree well enough that rise-time
+matching holds: OB-Xf 0.052 ≈ Virus 48–50, 0.268 ≈ Virus ~75.
+- **The Virus starts sounding ~4 ms after note on** (OB-Xf ~1 ms). Too small to hear.
+- Earlier fitted attacks vs measured equivalents: Obright 16 (equivalent ≈ 49),
+  Warmth 64 (≈ 76), OBX Bass 1 and Clavinet 37 (≈ 25). The user approved the
+  faster Obright/Warmth attacks, so they may prefer slightly snappier attacks
+  than OB-Xf's. Existing patches left as they are.
+
+## Mixer, ring mod and filter drive (measured 2026-10-26)
+
+`calibrate.py mixer`: triangle oscillators a fifth apart, so osc 1 (f1), osc 2 (f2)
+and the ring products (f2 ± f1) are measured separately in one render.
+- **OB-Xf mixer**: out = osc1·mix1 + osc2·mix2 + osc1·osc2·ring (+ noise). Osc
+  outputs swing ±0.5, so the ring product is small: ring 1.0 sits ~14 dB below a
+  full oscillator, ring r ≈ 20·log10(r) − 14 dB. Mix levels are close to linear
+  amplitude (0.5 → −5.7 dB, 0.25 → −11.9 dB).
+- **Virus Ringmodulator Volume** is a true osc 1 × osc 2 product with its own
+  level, unaffected by Osc Balance and Osc Mainvolume: 16 → −45 dB, 32 → −38,
+  64 → −29, 127 → −17 (re full-scale; the oscillators sit near −18…−20). Ring 127
+  is ~3 dB above an oscillator.
+- **Osc Balance is near equal-power**: at 64 osc 1 −19.5 / osc 2 −20.9 dB; equal
+  levels at ~72; each side drops steeply only near the far end (osc 1: 96 → −25.5,
+  112 → −31.5, 127 → off). The old linear mapping was a few dB off; now by table.
+- **Osc Mainvolume** scales the oscillators (64 = full, 40 → −7 dB, 16 → −17 dB,
+  0 = off) but not the ring, so Mainvolume 0 + ring gives pure ring mod.
+- Mapping (`map_mixer`): balance from the osc 2 − osc 1 dB difference; ring
+  volume so the ring sits at OB-Xf's level re the louder osc; if ring 127 is
+  not enough, lower Mainvolume. Check with saws and triangles: osc and ring
+  levels within ~1–4 dB of OB-Xf.
+- **The Virus analog filters saturate hard at Mainvolume 64.** Two saws a fifth
+  apart, cutoff open, Analog 2 or 4 Pole: intermodulation at f1+f2 is −14.8 dB
+  re osc 1 (LP digital −76 dB; OB-Xf −81 dB at cutoff open, −57 at 0.4). Each dB
+  of Mainvolume cut lowers it ~2 dB: 56 → −18.8, 48 → −22.3, 40 → −25.4,
+  32 → −28.5, 24 → −31.8, 16 → −36.8, 8 → −43.8. Every translated patch so
+  far used Mainvolume 64, so all carry this grit; it may be part of the "OB
+  filter character" gap on Obright. It also floors weak ring mod: a ring
+  below ~−15 dB re the oscillators is masked by the filter's own intermod.
+  Listening test sent: Obright at Mainvolume 64 / 40 / 16
+  (`renders/obright_drive_variants.wav`).
+- Ring-mod factory patches nearly always combine it with other untranslated
+  features (brass: env → pitch; keys: legato). Test patches: Kawari (ring 1.0,
+  blocker EnvLegatoMode) and Acidisillification (ring 0.28, LFO 2 waveform).
+  Results: Kawari amp 2.77 dB, bands 10.32 dB (ring −14.5 dB → volume 43; also
+  triangle cross-mod FM 18). Acidisillification bands 11.62 dB, but a poor test:
+  its LFO 2 swings osc 2 ±60 st with a non-sine wave (Virus LFO max ~±32 st),
+  and its ring (−25.5 dB) sits under the analog filter's intermod. Demo
+  `renders/ring_suite_AB.wav`. **User: "do not match at all"**, but both mix
+  ring with features the Virus can't match, so they don't isolate ring mod.
+- **Isolated ring test** (`renders/ring_isolated_AB.wav`: bare saws, filter open,
+  no fitting; A pure ring a fifth apart, B oscs + ring 0.7, C octave +7 c):
+  user **"closer for sure; A misses some high-end sizzle and random movement"**.
+  Measured on A: the Virus is 4.6 dB short at 6–12 kHz and 8 dB above 12 kHz
+  (its analog filter rolls off even fully open; digital LP recovers about half).
+  Spectral movement (mean frame-to-frame change): OB-Xf 3.4 (4.6 slop on, 2.6
+  off in one render), Virus 1.6.
+- **OB-Xf jitters oscillator pitch with white noise, always**: `oscPitchNoise
+  = 0.1` semitone × white noise on both oscillators (OscillatorBlock.h), whether
+  or not slop is on. Held-note pitch *drift* is tiny (< 0.5 c). Through ring
+  mod the jitter becomes noisy sidebands: the sizzle and movement.
+- Virus fixes measured on A: **HighEQ Gain +9 dB (100)** brings band balance to
+  0.6 dB from OB-Xf (base 3.4); **FM mode Noise, amount 2** gives movement 3.2
+  (more overshoots: 4 → 4.3, 8 → 4.7). Variants sent
+  (`renders/ring_A_variants.wav`: base, +EQ, +EQ+noise 2, +EQ+noise 4).
+  **User: high EQ helps, noise FM doesn't; OB-Xf still sounds better.**
+- Further options measured (all with EQ +9): energy off the ring-product grid
+  (distortion + noise) is similar everywhere (OB-Xf −12.5 dB, Virus −11…−14),
+  so filter drive isn't an obvious extra grit source. Ring 64/40 or digital LP
+  shift energy up into 3–12 kHz. LFO 3 (S&G, rate 127 ≈ 87 Hz, dest Osc 1+2
+  Pitch, amount 8) lifts movement 1.6 → 2.1 (OB-Xf 3.6); the Virus can't jitter
+  osc 1 at audio rate. Variants sent (`renders/ring_A_variants2.wav`: EQ,
+  +ring 64, +digital LP, +LFO 3 random).
+  User: "+ ring 64" a bit better; and **"each OB-Xf note gets a slightly
+  different tuning; the beats change per note"**.
+- **OB-Xf detunes each oscillator randomly at every note-on, unison or not**:
+  osc.tuningSlop = white noise at note on, × UnisonDetune (default 0.25) in the
+  pitch sum (OscillatorBlock.h). Measured: osc 1 and osc 2 each ~±2.9 c (std
+  1.6), independent (correlation +0.19), so the osc 2 − osc 1 interval varies
+  std **2.1 c** per note. UnisonDetune 0 → 0.2 c. Affects every two-osc patch,
+  not just ring mod: the beat rate changes note to note.
+- **The Virus also detunes per note (per voice), but both oscillators together**
+  (std 2.2/2.9 c, correlation +0.98): interval std only 0.6–0.9 c.
+- Virus per-note osc 2 randomness: **LFO 3, S&H (shape 4), rate 32, destination
+  Osc 2 Pitch, amount 18** → interval std ~2.2 c note to note, < 0.5 c wander
+  within a note. Rate 0 never resamples; amount 8 adds only ~1 c; 24 → 3.6 c.
+  LFO 3 is free in all translations so far (vibrato uses LFO 1). Variants sent
+  (`renders/ring_pernote_AB.wav`).
+  **User: helps.** Now in the translator (`map_pernote_tuning`) for non-unison
+  patches with both oscillators or ring mod heard; unison patches are skipped
+  (there the same randomness is the unison spread, already mapped). Checked:
+  OB-Xf UnisonDetune 0.25 → 1.64 c interval std, translated Virus 1.56 c;
+  0.4 → 2.88 / 2.87 c. Tables: OB-Xf 0 → 0.04 c, 0.1 → 0.5, 0.25 → 1.7,
+  0.4 → 2.9, 0.6 → 12; Virus LFO 3 S&H amount 0 → 0.76 (its own drift), 12 →
+  1.4, 18 → 2.2, 24 → 3.6, 32 → 5.5.
+- Approved patches translated before this (Clavinet, Wrong Organ) would get
+  LFO 3 amount 15 on re-translation; not re-done unasked.
+
 ## Virus A/B/C compatibility (looked at, then skipped by the user)
 
 - Single format (from source): A/B/C singles are 256 bytes (pages A + B

@@ -1,0 +1,155 @@
+{
+ "reference": "Kawari",
+ "hold": 2.0,
+ "tail": 4.0,
+ "mapping_notes": [
+  "osc1: triangle",
+  "osc2: pulse, duty 0.168",
+  "ring mod -14.5 dB re louder osc -> Ringmodulator Volume 43, Osc Mainvolume 64",
+  "osc2 detune 1.9 cents",
+  "cross-mod +/-6.5 st -> Virus FM 18, osc 2 raised +0.41 st",
+  "unison 2 voices (Virus 2), OB-Xf spread +/-12 c random -> even width 14 c",
+  "OB-Xf LFO1 2.86 Hz, +/-12.3 c on osc1 +0 / osc2 -1 -> Virus LFO1",
+  "EnvLegatoMode=1.00 not translated"
+ ],
+ "amp_level_error_db": 2.77,
+ "resonance_cap": 23,
+ "band_shape_error_db": 10.32,
+ "cutoff_fit": 50,
+ "cutoff_trimmed": 57,
+ "attack_brightness_gap_semitones": -0.11,
+ "changes_from_init": {
+  "Amp Env Attack": [
+   0,
+   25
+  ],
+  "Amp Env Decay": [
+   127,
+   85
+  ],
+  "Amp Env Release": [
+   4,
+   86
+  ],
+  "Amp Env Sustain": [
+   127,
+   0
+  ],
+  "Cutoff": [
+   127,
+   57
+  ],
+  "Filter Balance": [
+   64,
+   0
+  ],
+  "Filter Env Attack": [
+   0,
+   25
+  ],
+  "Filter Env Decay": [
+   46,
+   77
+  ],
+  "Filter Env Release": [
+   127,
+   68
+  ],
+  "Filter Env Sustain Time": [
+   64,
+   80
+  ],
+  "Filter1 Env Amt": [
+   0,
+   112
+  ],
+  "Filter1 Keyfollow": [
+   64,
+   86
+  ],
+  "Filter1 Mode": [
+   0,
+   7
+  ],
+  "Filter1 Resonance": [
+   0,
+   23
+  ],
+  "Flt1 EnvAmt Velocity": [
+   64,
+   34
+  ],
+  "Key Mode": [
+   0,
+   1
+  ],
+  "Lfo1 Rate": [
+   48,
+   85
+  ],
+  "Lfo1 Shape": [
+   1,
+   0
+  ],
+  "Osc Balance": [
+   64,
+   57
+  ],
+  "Osc FM Mode": [
+   0,
+   2
+  ],
+  "Osc1 Semitone": [
+   64,
+   52
+  ],
+  "Osc1 Shape": [
+   64,
+   0
+  ],
+  "Osc1 Wave Select": [
+   0,
+   1
+  ],
+  "Osc2 Detune": [
+   32,
+   127
+  ],
+  "Osc2 FM Amount": [
+   0,
+   18
+  ],
+  "Osc2 Lfo1 Amount": [
+   64,
+   55
+  ],
+  "Osc2 Pulsewidth": [
+   0,
+   84
+  ],
+  "Osc2 Semitone": [
+   64,
+   76
+  ],
+  "Osc2 Shape": [
+   64,
+   127
+  ],
+  "Ringmodulator Volume": [
+   0,
+   43
+  ],
+  "Transpose": [
+   64,
+   76
+  ],
+  "Unison Detune": [
+   48,
+   57
+  ],
+  "Unison Mode": [
+   0,
+   1
+  ]
+ }
+}

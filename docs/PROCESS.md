@@ -47,6 +47,15 @@ FINDINGS records *facts* (measurements, quirks); this file records *how we work*
   (250–550 Hz body). Check harmonic balance re the fundamental. For Warmth
   the user picked **Mid EQ boost around 400 Hz + a gentle low shelf**
   ("bodylow") over mid-only.
+- **Skip patches with pulse cross-mod** (user, 2026-10-26: "they just don't
+  work"). The Virus FMs with osc 1's saw even when osc 1 is a pulse, so OB-Xf's
+  two-pitch pulse cross-mod can't be made. `map_structure` flags it as not
+  translated, so the scan treats it as a blocker. Tubular Bells and Rock Unison
+  were set aside (`renders/dropped/`).
+- **Ring mod** (user, 2026-10-26): isolated ring is "closer for sure"; high EQ
+  helped, noise FM didn't; ring 64 slightly better than 127; per-note random
+  osc 2 tuning helped ("the beats change per note" on the OB). OB-Xf still
+  sounds better: the Virus can't jitter both oscillators at audio rate.
 - **No sub oscillators.** The user: "don't use sub oscs, they don't fit well".
   Use the EQ section for low end instead.
 - **Never commit factory content.** Anything exported from the Access ROM
@@ -70,7 +79,8 @@ OB-Xf patch ──params──▶ map_structure()  (tools/translate.py, uses too
                          │  fixed: transpose, osc pitch, waves, PW, balance, detune,
                          │  filter type, keyfollow, velocity, unison, LFO→pitch
                          ▼
-               stage 1: amp ADSR  ← level envelope, both filters wide open (chord)
+               stage 1: amp D/S/R ← level envelope, both filters wide open (chord);
+                        attack (amp and filter env) from measured rise times, not fitted
                stage 2: filter    ← third-octave band shapes over single/fifth/chord
                         (resonance capped at 60 × OB-Xf resonance + 8)
                stage 3: cutoff trim ← held-note brightness = OB-Xf: mean of the attack
@@ -80,15 +90,28 @@ OB-Xf patch ──params──▶ map_structure()  (tools/translate.py, uses too
                patches/<slug>.syx + .json, renders/<slug>/listen/*.wav
 ```
 
-What `map_structure` translates: transpose, osc pitch, saw/pulse + PW (duty
-tables), osc mix → balance, Osc2 detune (table), sync, filter 4-pole → Analog 4
+What `map_structure` translates: transpose, osc pitch, saw/pulse/triangle + PW
+(duty tables), osc mix → balance, Osc2 detune (table), sync, cross-mod → Virus
+FM mode Wave (tables from `tools/calibrate_xmod.py`; clamps past ~±17 st), mixer levels
+(Osc Balance, ring mod → Ringmodulator Volume / Osc Mainvolume, from
+`calibrate.py mixer`; pure ring uses ring 64 + Mainvolume 0; audible ring gets
+high EQ +9 dB), per-note random osc 2 tuning (non-unison two-osc or ring
+patches: LFO 3 S&H on osc 2, amount from `calibrate.py pernote`), filter 4-pole → Analog 4
 Pole / 2-pole → Analog 2 Pole, keyfollow, velocity → filter env / amp, unison
 (voices, ⅔ of std-matched detune, Key Mode Mono 1), LFO → osc pitch (OB-Xf
-LFO 1, else its LFO 2, onto Virus LFO 1). **Not yet**: cross-mod, OB-Xf
+LFO 1, else its LFO 2, onto Virus LFO 1). **Not yet**: OB-Xf
 Xpander/notch filter modes, LFO → cutoff (needs Virus LFO 2), LFO/env → PW
 (needs mod matrix), env → pitch, portamento, saw+pulse on one osc (saw wins).
-Pick patches with `map_structure` notes free of these (scan many first — most
-OB-Xf factory patches use cross-mod or LFO → cutoff).
+Full list with counts: FINDINGS "Unsupported OB-Xf features"; rerun
+`tools/scan_obxf.py` after adding a mapping.
+
+**Plan (the user's proposal, 2026-10-25): reach translator parity before translating more.**
+For each missing feature, most-used first: (1) build a minimal OB-Xf patch
+with only that feature on and measure it against candidate Virus controls at
+several amounts, like `tools/calibrate.py`; (2) add the mapping to
+`map_structure`, plus tables in `calibration.json`; (3) check by ear with a
+factory patch where it is the only blocker (scan "alone" column); (4) rescan.
+Then move to multi-feature patches.
 
 After a translation: check the report (a brightness gap above ~1 semitone or
 a resonance far above OB-Xf's means a problem), run `tools/recipe.py <slug>
@@ -144,8 +167,10 @@ Run: `.venv/bin/python tools/translate.py "<OB-Xf name>" --slug <slug> [--hold s
 | `tools/render_lib.py` | render helpers and metrics (level, centroid, band shapes) |
 | `tools/fit.py` | coordinate search and loss functions |
 | `tools/calibrate.py` | measured control scales → `tools/calibration.json` |
+| `tools/calibrate_xmod.py` | OB-Xf cross-mod → Virus FM Amount tables (merged into calibration.json) |
 | `tools/translate.py` | full OB-Xf → Virus translation (map + 3 fit stages + A/B) |
 | `tools/ab_render.py` | single/fifth/chord A/B files (old listening format; `EXAMPLES` drive the fit) |
+| `tools/scan_obxf.py` | which OB-Xf patches use features the translator can't map |
 | `tools/demo.py` | melodic phrase per patch; whole suite as one A-then-B file |
 | `patches/<slug>.{syx,md,json}` | patch, recipe card, translation report |
 | `patches/obright.py` | hand-finished Obright (FINAL values chosen by ear) |

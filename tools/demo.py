@@ -102,6 +102,10 @@ ROLES = {
     "obx-clavinet": ("OBX Clavinet", "arp", "OBX Clavinet"),
     "obx-bass-1": ("OBX Bass 1", "bass", "OBX Bass 1"),
     "obx-bass-2": ("OBX Bass 2", "bass", "OBX Bass 2"),
+    "wrong-organ": ("Wrong Organ", "swells", "Wrong Organ"),
+    "steel-string-guitar-2": ("Steel String Guitar 2", "arp", "Steel String Guitar 2"),
+    "kawari": ("Kawari", "stabs", "Kawari"),
+    "acidisillification": ("Acidisillification", "arp", "Acidisillification"),
 }
 
 
