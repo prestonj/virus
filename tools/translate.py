@@ -282,12 +282,45 @@ def map_structure(d, name):
     return p, notes
 
 
-def timing(d):
-    """Hold/tail long enough to hear the envelopes, within limits."""
-    a = logsc(d["AmpEnvAttack"], 4, 60000, 900) / 1000
-    r = logsc(d["AmpEnvRelease"], 8, 60000, 900) / 1000
-    hold = float(np.clip(a + 1.5, 2.0, 4.0))
-    tail = float(np.clip(r * 1.2, 1.5, 4.0))
+def timing(d, name=None, render=None):
+    """Hold/tail just long enough to hear the envelopes, measured on OB-Xf's chord.
+
+    hold = when loudness (within 1 dB) and brightness (within 0.1 octave) reach their late
+    values, + 0.3 s, in 0.8-4 s; tail = time to fall 40 dB after note off, + 0.2 s, in 0.4-4 s.
+    Render time is ~proportional to audio length, so this sets translation speed (the old
+    fixed 2-4 s hold / 1.5-4 s tail padded short sounds several-fold).
+    render(notes, hold, tail) -> mono reference audio; default: the OB-Xf patch `name`.
+    """
+    if name is None and render is None:  # old formula, kept for callers without a patch name
+        a = logsc(d["AmpEnvAttack"], 4, 60000, 900) / 1000
+        r = logsc(d["AmpEnvRelease"], 8, 60000, 900) / 1000
+        return round(float(np.clip(a + 1.5, 2.0, 4.0)), 1), round(float(np.clip(r * 1.2, 1.5, 4.0)), 1)
+    long_hold, long_tail = 4.0, 4.0
+    render = render or (lambda notes, hold, tail: render_obxf(name, notes=notes, hold=hold, tail=tail))
+    x = render(EXAMPLES["3_chord"], long_hold, long_tail)
+    smooth = lambda v, n: np.convolve(v, np.ones(n) / n, mode="same")  # noqa: E731
+    lv = smooth(level_db(x, 10), 10)  # 10 ms frames, 100 ms smoothing: a chord's beating swings > 1 dB
+    on = int(long_hold * 100)
+    peak = lv[5:on].max()
+    late_lv = np.median(lv[on - 50:on - 10])
+    if late_lv < peak - 40:  # dies away while held: settled once it is 40 dB down
+        settle_lv, silent_at_off = np.argmax(lv[:on] < peak - 40) / 100, True
+    else:
+        far = np.where(np.abs(lv[:on - 10] - late_lv) > 2.0)[0]
+        settle_lv, silent_at_off = ((far[-1] + 1) / 100 if len(far) else 0.0), False
+    fps = RATE / 512
+    con = int(long_hold * fps)
+    c = smooth(centroid(x), 9)[:con]
+    loud = lv[np.minimum((np.arange(con) * 100 / fps).astype(int), on - 1)] > peak - 30
+    late_c = np.median(c[int((long_hold - 0.5) * fps):con - 4])
+    far = np.where((np.abs(c[:con - 4] - late_c) > 0.15) & loud[:con - 4])[0]
+    settle_c = (far[-1] + 1) / fps if len(far) else 0.0
+    hold = float(np.clip(max(settle_lv, settle_c) + 0.3, 0.8, 2.5))  # cap: renders cost ~0.2 s per audio s
+    if silent_at_off:
+        tail = 0.4
+    else:
+        gone = np.where(lv[on:] < max(late_lv - 40, peak - 60))[0]
+        tail = float(np.clip((gone[0] / 100 if len(gone) else long_tail) + 0.2, 0.4, long_tail))
     return round(hold, 1), round(tail, 1)
 
 
@@ -325,8 +358,10 @@ def translate(name, slug, hold=None, tail=None, log=print):
     d = obxf_params(name)
     base, notes = map_structure(d, name)
     if hold is None:
-        hold, tail = timing(d)
-    examples = list(EXAMPLES.values())
+        hold, tail = timing(d, name)
+    # single note and chord; the fifth added a third of the render time and little the other two miss
+    # (listening is a melodic phrase now, tools/demo.py)
+    examples = [EXAMPLES["1_single"], EXAMPLES["3_chord"]]
     kw = lambda notes: dict(notes=notes, hold=hold, tail=tail, vel=100)  # noqa: E731
     report = {"reference": name, "hold": hold, "tail": tail, "mapping_notes": notes}
     for n in notes:
@@ -351,13 +386,15 @@ def translate(name, slug, hold=None, tail=None, log=print):
     p.set(Cutoff=int(20 + 90 * d["FilterCutoff"]), Filter1_Env_Amt=int(127 * min(1, d["FilterEnvAmount"] * 1.2)),
           Filter1_Resonance=int(60 * d["FilterResonance"]), Filter_Env_Attack=attack_value(d["FilterEnvAttack"]), Filter_Env_Decay=80,
           Filter_Env_Sustain=int(127 * d["FilterEnvSustain"]), Filter_Env_Release=30)
+    # Filter attack: seeded from the amp-attack table but fitted. Forcing it (OB-Xf 0 -> Virus 25)
+    # cost OBX Bass 2 ~0.6 dB band error; the filter envelopes evidently don't share the amp timing.
     # Resonance stays near OB-Xf's own: the fit buys brightness with resonance the OB doesn't have
     # (OBX Bass 2: 44 vs OB-Xf ~7, user chose 8). The fit runs to whatever ceiling it gets
     # (cap +16 -> res 23 with cutoff 7), so keep the cap tight.
     res_cap = min(90, round(60 * d["FilterResonance"]) + 8)
     report["resonance_cap"] = res_cap
     free = {"Cutoff": (0, 127), "Filter1 Env Amt": (0, 127), "Filter1 Resonance": (0, res_cap),
-            "Filter1 Keyfollow": (64, 127), "Filter Env Decay": (0, 127),
+            "Filter1 Keyfollow": (64, 127), "Filter Env Attack": (0, 127), "Filter Env Decay": (0, 127),
             "Filter Env Sustain": (0, 127), "Filter Env Sustain Time": (0, 127), "Filter Env Release": (0, 127)}
     p, l2 = coordinate_search(p, free, spectral_fit_loss_multi(targets), start_step=16, max_rounds=40, log=log)
     report["band_shape_error_db"] = round(l2, 2)

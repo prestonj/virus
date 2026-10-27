@@ -1,8 +1,8 @@
 """Obright: Virus TI translation of OB-Xf's "Obright Original" (OB-Xa style polybrass).
 
-Run: .venv/bin/python patches/obright.py           # write patches/obright.syx from FINAL
-     .venv/bin/python patches/obright.py --fit     # re-run stages 1-2 (amp, brightness)
-     .venv/bin/python patches/obright.py --refine  # stage 3 (band shapes) from obright.syx
+Run: .venv/bin/python patches/obright-hand.py           # write patches/obright-hand.syx from FINAL
+     .venv/bin/python patches/obright-hand.py --fit     # re-run stages 1-2 (amp, brightness)
+     .venv/bin/python patches/obright-hand.py --refine  # stage 3 (band shapes) from obright-hand.syx
 
 FINAL is what the user picked by ear ("dark"): the stage 3 band-shape fit, then
 cutoff 47 -> 40 because the fits still sounded brighter than OB-Xf. Re-running the
@@ -56,7 +56,7 @@ FINAL = dict(
 
 def final():
     p = voice().set(**FINAL)
-    out = ROOT / "patches" / "obright.syx"
+    out = ROOT / "patches" / "obright-hand.syx"
     p.save(out)
     print("wrote", out)
     return p
@@ -91,7 +91,7 @@ def main():
                                 tone_fit_loss_multi(targets), start_step=8)
     print(f"filter fit: brightness error {loss:.3f} octaves")
 
-    out = ROOT / "patches" / "obright.syx"
+    out = ROOT / "patches" / "obright-hand.syx"
     p.save(out)
     print("wrote", out)
     for k, (old, new) in sorted(p.diff(Patch.from_syx()).items()):
@@ -109,7 +109,7 @@ def refine():
     for notes in EXAMPLES.values():
         kw = dict(notes=notes, hold=HOLD, tail=TAIL, vel=100)
         targets.append((*obxf_band_target(REF, **kw), kw))
-    p = Patch.from_syx(ROOT / "patches" / "obright.syx")
+    p = Patch.from_syx(ROOT / "patches" / "obright-hand.syx")
     free = {
         "Cutoff": (0, 127), "Filter1 Env Amt": (0, 127), "Filter1 Resonance": (0, 90),
         "Filter1 Mode": (4, 7), "Filter Routing": (0, 1), "Filter Balance": (0, 127),
@@ -119,7 +119,7 @@ def refine():
     }
     p, loss = coordinate_search(p, free, spectral_fit_loss_multi(targets), start_step=8, max_rounds=60)
     print(f"band-shape error {loss:.2f} dB")
-    p.save(ROOT / "patches" / "obright.syx")
+    p.save(ROOT / "patches" / "obright-hand.syx")
     for k, (old, new) in sorted(p.diff(Patch.from_syx()).items()):
         print(f"  {k:28s} {old:3d} -> {new:3d}")
 

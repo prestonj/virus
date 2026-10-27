@@ -1,0 +1,94 @@
+{
+ "reference": "Obright Original",
+ "hold": 2.5,
+ "tail": 0.5,
+ "mapping_notes": [
+  "osc2 detune 5.2 cents",
+  "non-LP filter mode in OB-Xf: translated as low-pass"
+ ],
+ "amp_level_error_db": 2.47,
+ "resonance_cap": 8,
+ "band_shape_error_db": 4.11,
+ "cutoff_fit": 42,
+ "cutoff_trimmed": 30,
+ "attack_brightness_gap_semitones": 0.1,
+ "changes_from_init": {
+  "Amp Env Attack": [
+   0,
+   50
+  ],
+  "Amp Env Decay": [
+   127,
+   90
+  ],
+  "Amp Env Release": [
+   4,
+   35
+  ],
+  "Amp Env Sustain": [
+   127,
+   95
+  ],
+  "Cutoff": [
+   127,
+   30
+  ],
+  "Filter Balance": [
+   64,
+   0
+  ],
+  "Filter Env Attack": [
+   0,
+   21
+  ],
+  "Filter Env Decay": [
+   46,
+   80
+  ],
+  "Filter Env Release": [
+   127,
+   12
+  ],
+  "Filter Env Sustain": [
+   0,
+   36
+  ],
+  "Filter Env Sustain Time": [
+   64,
+   42
+  ],
+  "Filter1 Env Amt": [
+   0,
+   127
+  ],
+  "Filter1 Keyfollow": [
+   64,
+   104
+  ],
+  "Filter1 Mode": [
+   0,
+   7
+  ],
+  "Filter1 Resonance": [
+   0,
+   8
+  ],
+  "Flt1 EnvAmt Velocity": [
+   64,
+   44
+  ],
+  "Osc Balance": [
+   64,
+   54
+  ],
+  "Osc2 Detune": [
+   32,
+   50
+  ],
+  "Transpose": [
+   64,
+   52
+  ]
+ },
+ "verdict": "Preferred by ear over the earlier hand-finished version (obright-hand.syx), 2026-10-26."
+}

@@ -1,0 +1,224 @@
+{
+ "reference": "Jun-6 V: Vintage Factory/17 Brass 1",
+ "hold": 2.5,
+ "tail": 0.4,
+ "mapping_notes": [
+  "vibrato 3.5 c at 3.20 Hz -> LFO 3 amount 19"
+ ],
+ "mapped": {
+  "Amp Env Attack": [
+   0,
+   56
+  ],
+  "Amp Env Decay": [
+   127,
+   42
+  ],
+  "Amp Env Release": [
+   4,
+   25
+  ],
+  "Amp Env Sustain": [
+   127,
+   95
+  ],
+  "Assign1 Amount": [
+   100,
+   64
+  ],
+  "Assign1 Source": [
+   3,
+   0
+  ],
+  "Chorus Delay": [
+   127,
+   64
+  ],
+  "Chorus Depth": [
+   16,
+   86
+  ],
+  "Chorus Rate": [
+   69,
+   17
+  ],
+  "Chorus/Type": [
+   1,
+   2
+  ],
+  "Cutoff": [
+   127,
+   0
+  ],
+  "Filter Balance": [
+   64,
+   0
+  ],
+  "Filter Env Attack": [
+   0,
+   13
+  ],
+  "Filter Env Decay": [
+   46,
+   48
+  ],
+  "Filter Env Release": [
+   127,
+   25
+  ],
+  "Filter Env Sustain": [
+   0,
+   95
+  ],
+  "Filter1 Env Amt": [
+   0,
+   95
+  ],
+  "Filter1 Keyfollow": [
+   64,
+   110
+  ],
+  "Filter1 Mode": [
+   0,
+   7
+  ],
+  "Lfo3 Fade-In Time": [
+   0,
+   60
+  ],
+  "Lfo3 Rate": [
+   94,
+   88
+  ],
+  "Osc Balance": [
+   64,
+   0
+  ],
+  "Osc Lfo3 Amount": [
+   0,
+   19
+  ]
+ },
+ "amp_level_error_db": 1.3,
+ "band_shape_error_db": 4.3,
+ "cutoff_fit": 0,
+ "cutoff_trimmed": 5,
+ "brightness_gap_semitones": 0.24,
+ "changes_from_init": {
+  "Amp Env Attack": [
+   0,
+   56
+  ],
+  "Amp Env Decay": [
+   127,
+   67
+  ],
+  "Amp Env Release": [
+   4,
+   22
+  ],
+  "Amp Env Sustain": [
+   127,
+   85
+  ],
+  "Assign1 Amount": [
+   100,
+   64
+  ],
+  "Assign1 Source": [
+   3,
+   0
+  ],
+  "Chorus Delay": [
+   127,
+   64
+  ],
+  "Chorus Depth": [
+   16,
+   86
+  ],
+  "Chorus Rate": [
+   69,
+   17
+  ],
+  "Cutoff": [
+   127,
+   5
+  ],
+  "Filter Balance": [
+   64,
+   0
+  ],
+  "Filter Env Attack": [
+   0,
+   12
+  ],
+  "Filter Env Decay": [
+   46,
+   82
+  ],
+  "Filter Env Release": [
+   127,
+   18
+  ],
+  "Filter Env Sustain": [
+   0,
+   78
+  ],
+  "Filter1 Env Amt": [
+   0,
+   93
+  ],
+  "Filter1 Keyfollow": [
+   64,
+   115
+  ],
+  "Filter1 Mode": [
+   0,
+   7
+  ],
+  "Filter1 Resonance": [
+   0,
+   6
+  ],
+  "HighEQ Gain": [
+   64,
+   75
+  ],
+  "Lfo3 Fade-In Time": [
+   0,
+   60
+  ],
+  "Lfo3 Rate": [
+   94,
+   88
+  ],
+  "LowEQ Gain": [
+   64,
+   88
+  ],
+  "Osc Balance": [
+   64,
+   0
+  ],
+  "Osc Lfo3 Amount": [
+   0,
+   19
+  ],
+  "deprecated_112_103": [
+   1,
+   2
+  ]
+ },
+ "variant_edits": [
+  "Filter1 Env Amt 85 -> 93 (phrase fit)",
+  "Filter1 Keyfollow 107 -> 115 (phrase fit)",
+  "HighEQ Gain 64 -> 75 (phrase fit)",
+  "LowEQ Gain 64 -> 88 (phrase fit)"
+ ],
+ "phrase_error_db": [
+  4.43,
+  1.31
+ ],
+ "verdict": "Chosen by ear over the first translation (renders/dropped/juno-v1/), 2026-10-27."
+}

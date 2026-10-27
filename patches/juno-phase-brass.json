@@ -1,0 +1,187 @@
+{
+ "reference": "Jun-6 V: Vintage Factory/18 Phase Brass",
+ "hold": 2.5,
+ "tail": 0.4,
+ "mapping_notes": [
+  "VCA gate"
+ ],
+ "mapped": {
+  "Amp Env Release": [
+   4,
+   0
+  ],
+  "Assign1 Amount": [
+   100,
+   64
+  ],
+  "Assign1 Source": [
+   3,
+   0
+  ],
+  "Chorus Delay": [
+   127,
+   64
+  ],
+  "Chorus Depth": [
+   16,
+   86
+  ],
+  "Chorus Rate": [
+   69,
+   17
+  ],
+  "Chorus/Type": [
+   1,
+   2
+  ],
+  "Cutoff": [
+   127,
+   0
+  ],
+  "Filter Balance": [
+   64,
+   0
+  ],
+  "Filter Env Decay": [
+   46,
+   50
+  ],
+  "Filter Env Release": [
+   127,
+   31
+  ],
+  "Filter Env Sustain": [
+   0,
+   60
+  ],
+  "Filter1 Env Amt": [
+   0,
+   81
+  ],
+  "Filter1 Keyfollow": [
+   64,
+   127
+  ],
+  "Filter1 Mode": [
+   0,
+   7
+  ],
+  "Osc Balance": [
+   64,
+   0
+  ],
+  "Osc1 Pulsewidth": [
+   0,
+   2
+  ],
+  "Osc1 Shape": [
+   64,
+   92
+  ]
+ },
+ "band_shape_error_db": 2.39,
+ "cutoff_fit": 0,
+ "cutoff_trimmed": 3,
+ "brightness_gap_semitones": 0.14,
+ "changes_from_init": {
+  "Amp Env Release": [
+   4,
+   0
+  ],
+  "Assign1 Amount": [
+   100,
+   64
+  ],
+  "Assign1 Source": [
+   3,
+   0
+  ],
+  "Chorus Delay": [
+   127,
+   64
+  ],
+  "Chorus Depth": [
+   16,
+   86
+  ],
+  "Chorus Rate": [
+   69,
+   17
+  ],
+  "Cutoff": [
+   127,
+   3
+  ],
+  "Filter Balance": [
+   64,
+   0
+  ],
+  "Filter Env Attack": [
+   0,
+   8
+  ],
+  "Filter Env Decay": [
+   46,
+   62
+  ],
+  "Filter Env Release": [
+   127,
+   31
+  ],
+  "Filter Env Sustain": [
+   0,
+   48
+  ],
+  "Filter1 Env Amt": [
+   0,
+   91
+  ],
+  "Filter1 Keyfollow": [
+   64,
+   127
+  ],
+  "Filter1 Mode": [
+   0,
+   7
+  ],
+  "HighEQ Gain": [
+   64,
+   67
+  ],
+  "LowEQ Gain": [
+   64,
+   40
+  ],
+  "Osc Balance": [
+   64,
+   0
+  ],
+  "Osc Mainvolume": [
+   64,
+   59
+  ],
+  "Osc1 Pulsewidth": [
+   0,
+   2
+  ],
+  "Osc1 Shape": [
+   64,
+   92
+  ],
+  "deprecated_112_103": [
+   1,
+   2
+  ]
+ },
+ "variant_edits": [
+  "Filter1 Env Amt 83 -> 91 (phrase fit)",
+  "HighEQ Gain 64 -> 67 (phrase fit)",
+  "LowEQ Gain 64 -> 40 (phrase fit)",
+  "Osc Mainvolume 64 -> 59 (phrase fit)"
+ ],
+ "phrase_error_db": [
+  3.8,
+  1.57
+ ],
+ "verdict": "Chosen by ear over the first translation (renders/dropped/juno-v1/), 2026-10-27."
+}

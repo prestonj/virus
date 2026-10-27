@@ -17,7 +17,8 @@ FINDINGS records *facts* (measurements, quirks); this file records *how we work*
   patches to its `ROLES`. `translate.py` writes a one-patch
   `renders/<slug>/listen/demo_AB.wav`. Send with `SendUserFile`
   (`display: attach`), with the timestamps in the caption — they listen
-  remotely. (Single note / fifth / chord files via `tools/ab_render.py` are
+  remotely; files over 30 MB don't reach the phone, so send long suites as
+  AAC (`afconvert -f m4af -d aac -b 256000 in.wav out.m4a`). (Single note / fifth / chord files via `tools/ab_render.py` are
   still what the fit uses, but no longer the listening deliverable.)
 - **Every patch gets a recipe card** (`patches/<slug>.md`): every change from
   `-INIT-` as a numbered table with the panel value (bipolar = raw − 64) and the
@@ -57,7 +58,20 @@ FINDINGS records *facts* (measurements, quirks); this file records *how we work*
   osc 2 tuning helped ("the beats change per note" on the OB). OB-Xf still
   sounds better: the Virus can't jitter both oscillators at audio rate.
 - **No sub oscillators.** The user: "don't use sub oscs, they don't fit well".
-  Use the EQ section for low end instead.
+  Use the EQ section for low end instead. (Juno patches play the Juno's sub on
+  osc 2, a real oscillator, not the Virus sub oscillator.)
+- **Juno batch 1 by ear** (2026-10-26): Brass 1 "needs to be brighter"; Phase
+  Brass "not as thick (maybe EQ?)"; Strings 2 "could use a bit more chorus";
+  Bass 1 "more sine-wavey"; Clavichord "slightly sharper attack"; Harpsichord
+  "not as smooth". Measured on the phrase, these were real: fits on middle C
+  missed the phrase's register and note lengths (Bass 1 5–20 dB dull above
+  200 Hz; brass 8–16 dB dark above 5 kHz; Harpsichord 3–9 dB too bright up
+  top, sub too loud). Hence `tools/phrase_fit.py`: a last fit on the demo
+  phrase's long-term spectrum, plus `--set` for by-ear edits.
+- **Juno batch 1 v2** (2026-10-27): after hearing Juno / v1 / v2, the user
+  switched all six to v2 (phrase fit + by-ear edits). The first translations
+  are in `renders/dropped/juno-v1/`. Phase Brass v2's fit cut LowEQ to 40,
+  against the "thicker" note: if it still sounds thin, try a low/mid EQ boost.
 - **Never commit factory content.** Anything exported from the Access ROM
   (factory singles, the ROM INIT) stays out of git; `build.sh` regenerates
   `patches/reference/init-ti.syx` from the user's own firmware.
@@ -121,8 +135,14 @@ picked a resonance much higher than OB-Xf's, also send a low-res variant at
 equal brightness (user prefers low resonance). Variants go in the report as
 `variant_edits`, not `listening_edits` (those are the user's changes by ear).
 
-Run: `.venv/bin/python tools/translate.py "<OB-Xf name>" --slug <slug> [--hold s --tail s]`
-(~5–10 min per patch on 10 cores). Pads: use a longer hold (3 s) and tail (4 s).
+Run: `.venv/bin/python tools/translate.py "<OB-Xf name>" --slug <slug> [--hold s --tail s]`.
+Hold and tail are measured per patch on OB-Xf's chord (`timing(d, name)`): hold =
+when loudness and brightness settle + 0.3 s (0.8–2.5 s), tail = 40 dB fall after
+release + 0.2 s (0.4–4 s). **Speed**: a Virus render costs ~0.37 s fixed (boot +
+1 s settle) + ~0.2 s per audio second; render time is the whole cost of a
+translation. Booting once per many renders would save the fixed part, but the
+Virus carries voice-allocation and per-voice-detune state between notes, so
+renders would stop being bit-identical, and the fit depends on that. Not done.
 
 ### Rules learned the hard way
 
@@ -135,8 +155,9 @@ Run: `.venv/bin/python tools/translate.py "<OB-Xf name>" --slug <slug> [--hold s
    Transpose −12. Compare a single note's fundamental before fitting.
 4. **Check routing before fitting.** Filter 2 in the path (INIT's balance 64)
    kept the sweep closed; no parameter tweak can fix a structural mistake.
-5. **Fit the same examples you'll listen to** (single, fifth, chord), not one
-   chord.
+5. **Fit on a single note and a chord** (`EXAMPLES` 1_single and 3_chord).
+   The fifth was dropped 2026-10-26 for speed; listening uses a melodic
+   phrase now (`tools/demo.py`).
 6. **Brightness centroid isn't enough** — it can't see slope or resonance.
    Match third-octave band shapes, and check brightness per time window
    (0–0.3 s, 0.3–1 s, 1–2 s).
@@ -156,6 +177,13 @@ Run: `.venv/bin/python tools/translate.py "<OB-Xf name>" --slug <slug> [--hold s
     A plain fork can deadlock on SciPy's FFT thread pool (see FINDINGS). A
     run that shows no progress at ~0% CPU is hung: `sample <pid>`, don't wait.
     Log long runs straight to a file (no `| tail`) so progress is visible.
+13. **Juno pipeline** (2026-10-26, user: "let's move on to Juno 6"): same
+    method as OB-Xf. `tools/calibrate_juno.py` measures every Juno control and
+    its Virus counterpart on bare test voices; `tools/translate_juno.py` maps a
+    Jun-6 V preset through those tables, then fits amp D/S/R and the filter
+    against Jun-6 V renders with effects off, and adds the chorus last.
+    Targets: the 56 "Vintage Factory" presets (the original Juno-60 sounds).
+    Python buffers stdout into a file: run with `-u` to see progress.
 
 ## Files
 
@@ -171,6 +199,9 @@ Run: `.venv/bin/python tools/translate.py "<OB-Xf name>" --slug <slug> [--hold s
 | `tools/translate.py` | full OB-Xf → Virus translation (map + 3 fit stages + A/B) |
 | `tools/ab_render.py` | single/fifth/chord A/B files (old listening format; `EXAMPLES` drive the fit) |
 | `tools/scan_obxf.py` | which OB-Xf patches use features the translator can't map |
-| `tools/demo.py` | melodic phrase per patch; whole suite as one A-then-B file |
+| `tools/jun6.py`, `tools/juce_state.py` | Arturia Jun-6 V headless (presets, params, renders) |
+| `tools/demo.py` | melodic phrase per patch; whole suite as one A-then-B file (stereo; OB-Xf or `jun6:` references) |
+| `tools/calibrate_juno.py` | Juno (Jun-6 V) ↔ Virus control tables (merged into calibration.json) |
+| `tools/translate_juno.py` | Jun-6 V preset → Virus translation (map + fit + demo) |
 | `patches/<slug>.{syx,md,json}` | patch, recipe card, translation report |
-| `patches/obright.py` | hand-finished Obright (FINAL values chosen by ear) |
+| `patches/obright-hand.py` | the earlier hand-finished Obright (FINAL values chosen by ear); superseded by the v3 translation |

@@ -57,9 +57,13 @@ def card(slug, title=None):
     report = json.loads((ROOT / "patches" / f"{slug}.json").read_text())
     rows = sorted(patch.diff(Patch.from_syx()).items(), key=lambda kv: (ORDER.index(section(kv[0])),
                                                                       PARAMS[kv[0]]["page"], PARAMS[kv[0]]["index"]))
-    title = title or report["reference"]
+    juno = report["reference"].startswith("Jun-6 V: ")
+    ref = report["reference"].removeprefix("Jun-6 V: ")
+    synth, tool = ("Jun-6 V (Juno-6/60)", "translate_juno.py") if juno else ("OB-Xf", "translate.py")
+    short = "the Juno" if juno else "OB-Xf"
+    title = title or ref.split("/")[-1]
     lines = [f"# {title} (Virus TI)", "",
-             f"Translated from OB-Xf's **\"{report['reference']}\"** by `tools/translate.py`. "
+             f"Translated from {synth}'s **\"{ref}\"** by `tools/{tool}`. "
              f"File: `{slug}.syx`.", "",
              "## Changes from INIT", "",
              "Start from the TI's `-INIT-` single. Panel = how the value shows on the TI "
@@ -73,13 +77,15 @@ def card(slug, title=None):
         lines += ["", "## Changes made by ear", ""] + [f"- {e}" for e in report["listening_edits"]]
     if report.get("variant_edits"):
         lines += ["", "## Variant changes (not yet heard)", ""] + [f"- {e}" for e in report["variant_edits"]]
+    amp = (f"Amp envelope level-shape error {report['amp_level_error_db']} dB; filter"
+           if "amp_level_error_db" in report else "Gate VCA (no amp fit); filter")
+    gap = report.get("attack_brightness_gap_semitones", report.get("brightness_gap_semitones"))
     lines += ["", "## How close it is", "",
-              f"- Amp envelope level-shape error {report['amp_level_error_db']} dB; filter band-shape error "
-              f"{report['band_shape_error_db']} dB (Obright final was 4.49 dB).",
+              f"- {amp} band-shape error {report['band_shape_error_db']} dB.",
               f"- Cutoff trimmed {report['cutoff_fit']} → {report['cutoff_trimmed']} so the held note (attack and "
-              f"sustain medians) matches OB-Xf's brightness (gap {report['attack_brightness_gap_semitones']:+} semitones).",
-              f"- Listening files: `renders/{slug}/listen/*_AB.wav` (OB-Xf first, then Virus, "
-              f"loudness-matched; {report['hold']} s hold, {report['tail']} s tail).",
+              f"sustain medians) matches {short}'s brightness (gap {gap:+} semitones).",
+              f"- Listening file: `renders/{slug}/listen/demo_AB.wav` ({short} first, then Virus, "
+              f"loudness-matched).",
               "- " + report.get("verdict", "Not yet checked by ear."), ""]
     out = ROOT / "patches" / f"{slug}.md"
     out.write_text("\n".join(lines))

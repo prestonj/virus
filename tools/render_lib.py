@@ -39,8 +39,9 @@ def render_virus(patch, notes=(60,), hold=1.5, tail=1.5, vel=100):
     return data.astype(np.float64).mean(axis=1)
 
 
-def render_virus_seq(patch, seq, tail=2.0):
-    """Play a note list: seq = [(start s, length s, note, velocity), ...] from the first note on."""
+def render_virus_seq(patch, seq, tail=2.0, stereo=False):
+    """Play a note list: seq = [(start s, length s, note, velocity), ...] from the first note on.
+    Mono unless stereo=True (then shape (n, 2))."""
     with tempfile.TemporaryDirectory() as tmp:
         syx, wav, txt = (os.path.join(tmp, f) for f in ("p.syx", "p.wav", "p.seq"))
         patch.save(syx)
@@ -49,7 +50,8 @@ def render_virus_seq(patch, seq, tail=2.0):
         subprocess.run([str(VIRUS), "--rom", str(ROM), "--syx", syx, "--seq", txt, "--tail", str(tail),
                         "--out", wav], check=True, capture_output=True, close_fds=False)
         _, data = wavfile.read(wav)
-    return data.astype(np.float64).mean(axis=1)
+    data = data.astype(np.float64)
+    return data if stereo else data.mean(axis=1)
 
 
 def render_virus_many(patches, **kw):
@@ -139,7 +141,7 @@ def centroid_loss(x, y, level_x, gate_db=-45):
     return float(np.mean(np.abs(cx[:n] - cy[:n])[mask])) if mask.any() else 0.0
 
 
-def render_obxf_seq(name, seq, tail=2.0, slop=True, overrides=None):
+def render_obxf_seq(name, seq, tail=2.0, slop=True, overrides=None, stereo=False):
     """OB-Xf version of render_virus_seq, sample-accurate. name None = default patch (see render_obxf)."""
     eng = obxfpy.ObxfEngine(float(RATE))
     if name:
@@ -162,4 +164,5 @@ def render_obxf_seq(name, seq, tail=2.0, slop=True, overrides=None):
             eng.note_on(n, v)
         elif on == 0:
             eng.note_off(n, v)
-    return (np.concatenate([o[0] for o in out]) + np.concatenate([o[1] for o in out])) / 2
+    left, right = np.concatenate([o[0] for o in out]), np.concatenate([o[1] for o in out])
+    return np.stack([left, right], axis=1) if stereo else (left + right) / 2

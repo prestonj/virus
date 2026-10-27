@@ -588,6 +588,204 @@ and the ring products (f2 ± f1) are measured separately in one render.
 - Approved patches translated before this (Clavinet, Wrong Organ) would get
   LFO 3 amount 15 on re-translation; not re-done unasked.
 
+## Re-translation with the parity translator (2026-10-26)
+
+- v2 (all features + measured hold/tail + no fifth + attacks from tables) scored
+  **worse** than the current patches on the same metric (single + chord, 2 s
+  hold, 1.5 s tail): band error up 0.4–2.2 dB on 8 of 11. Level error was often
+  slightly better (measured amp attack).
+- Not the short fit windows: OBX Bass 2 fitted on 2 s windows scored 6.04 vs
+  5.57 at 0.8 s (current 3.74).
+- Cause: **filter-envelope attack forced from the amp-attack table** (OB-Xf
+  0 → Virus 25). Swapping in the old fitted value alone: 6.04 → 5.44, and the
+  forced attack pushed the rest of the filter fit into a worse optimum. The amp
+  table doesn't transfer to the filter envelopes. Fix: seed the filter attack
+  from the table, but fit it. Bass 2 v3: **3.57** (better than current 3.74;
+  fit chose filter attack 1). Amp attack stays mapped, not fitted.
+- One virusRender run segfaulted once (during Bass 2 v2, while Jun-6 V was being
+  tested on the same machine); the retry was fine. The batch now retries once.
+- Lesson: score old vs new on one fixed metric before sending a comparison;
+  each translation's own report uses its own windows and examples.
+- v3 (filter attack fitted again) vs current, band error on single + chord, 2 s /
+  1.5 s: better for Bass 2 (3.66 → 3.14), Steel String Guitar 2, Kawari,
+  Acidisillification; same for It's an OB-X!, Wrong Organ; worse for Obright
+  (+1.9, hand-finished current), Pursuit Bright (+1.6), Bass 1 (+0.8), Warmth
+  (+0.4, ear-edited current), Clavinet (+0.25).
+- **This score is noisy for unison patches**: Bass 1 v3 scored 6.12 and 4.92 in
+  two passes. OB-Xf re-randomises each unison voice's tuning per note, so its
+  reference spectra differ render to render. Treat ±1 dB on unison patches as
+  noise; use more reference renders (or UnisonDetune-aware averaging) to score.
+- Pursuit Bright v3 sits in a worse spot than the current fit: putting back any
+  one of current filter env decay / keyfollow / sustain time improves it ~1 dB.
+  Bass 1: the resonance cap (9 vs the current 25) costs the most.
+  Comparison sent (`renders/compare_v3_AB.wav`); verdicts pending.
+
+## Arturia Jun-6 V as a reference (2026-10-26)
+
+Hosted headless with Spotify's `pedalboard` (pip, in .venv); helper
+`tools/jun6.py`, state codec `tools/juce_state.py`. See docs/VINTAGE_TARGETS.md
+for why the Juno.
+- **Block size matters**: at pedalboard's default buffer (8192) Jun-6 V plays
+  nothing (Mini V4 and Jup-8 V4 too, VST3 and AU). `buffer_size=512` works, on
+  any MIDI channel. Licensing was not the problem: it runs headless.
+- **The first render after loading a preset is silent**: render once and
+  discard, then render for real.
+- **Preset files are the plugin's state.** `/Library/Arturia/Presets/Jun-6 V/
+  Factory/**` are boost `serialization::archive` text; the VST3 state is JUCE's
+  "VC2!" XML whose `<IComponent>` is that same text in JUCE's base64 variant
+  ("size.chars", 6 bits/char LSB-first, table ".A–Za–z0–9+"). Loading a preset =
+  put the file into IComponent and set `raw_state`. The state's own name header
+  then still shows the old name; parameters do change.
+- 181 parameters in **display units** (vcf_cutoff_hz, envelope_1_decay_s,
+  volume_db, switches by name): far easier than OB-Xf's 0–1 values.
+- **Factory presets: 56 "Vintage Factory"** (the original Juno-6 sounds, 11–78)
+  + ~150 Arturia ones.
+- Not deterministic: `voice_calibration` (Good/…), `chorus_noise`, DCO drift.
+  Average renders or switch these off when fitting.
+- The default patch is quiet (−27 dB) with a low cutoff; a lone default note
+  can look silent.
+- Arturia presets and renders are Arturia's content: not committed (renders/
+  is ignored; nothing is copied into the repo).
+
+## Jun-6 V extended features (catalogued 2026-10-26)
+
+What Arturia added beyond the Juno-6 panel, from the plugin's parameter list
+and a survey of all 185 factory presets (`jun6.preset_state()` reads a preset's
+stored values; the plugin parameters only expose some of them).
+
+**Exposed as plugin parameters**
+- **Envelope 2**: ADSR (attack 1 ms–2.97 s, decay/release 2 ms–19/17 s).
+  Can drive the VCA (`vca_modulation_source` = Env / Gate / Env2) and is a
+  modulation source. Two "env_2_dest_N_amount" knobs (−1…1) are the
+  performance-panel shortcuts to its first two routings.
+- **LFO 2**: Sine / Ramp / Triangle / Saw / Square / S&H, 0.038–30 Hz or synced
+  (8 bars … 1/32), retrigger Poly / Mono / Off.
+- **LFO 1 extras**: tempo sync, delay mode "Delay + Rise" or "Rise".
+- **Voice**: unison (detune 0.05–1), voice detune, portamento (0–5 s),
+  `voice_calibration` Good / Average / Poor, chord mode, hold, arpeggiator
+  (Up / Down / Up & Down, 1–3 oct, 1.4–45 Hz or synced).
+- **Effects** (`fx_section_on_off`): chorus Off / I / II / I+II, chorus noise
+  on/off; stereo delay (2 ms–2 s or synced, feedback, stereo width, dry/wet);
+  reverb (Dattorro plate: size, decay, damping, predelay 0–200 ms, dry/wet).
+- **Macros** brightness / timbre / time / movement and velocity / aftertouch /
+  mod wheel amount knobs (−1…1).
+
+**Only in the preset state**
+- **Modulation grid**: fixed sources Env 2, LFO 2, Velocity, AfterTouch, ModWheel
+  × 35 targets, `Modulations_<section> <param>_<source>_Amount` (0.5 = off).
+  Targets: DCO Pitch / PWM / LFO Amount / Sub Vol / Noise Vol; VCF Freq / Reso /
+  Env Amount / LFO Amount / KBD Amount; HPF Freq; VCA Level; Env 1 and Env 2
+  A/D/S/R; LFO 1 Rate / Delay Time; LFO 2 Rate; Portamento; Unison Detune;
+  ARP Rate; Delay Time / Rate / Feedback / Stereo; Reverb Size / Decay / Damp /
+  Predelay.
+- **Macro matrix**: 5 sources × 9 slots (`ModMatrixDestN` = target index / 35,
+  `ModMatrixAmount_SrcS_DestN`). Src 3 → slots 8/9 are always DCO LFO / VCF LFO
+  (they mirror `lfo_mod_dco_amount` / `lfo_mod_vcf_amount`: the Juno-6 bender
+  lever's LFO). Which macro is Src 1/2/4/5, and the index → target order, are
+  not decoded yet.
+- **Hidden switches**: Juno-60 chorus mode and its own rate/depth
+  (`Juno6Chorus_Juno60M3*`, force stereo), chorus output low-pass,
+  HPF mode (continuous Juno-6 vs 4-step Juno-60, `HPF_HPFMode`, always 0),
+  resonance noise, Juno-60 noise low-pass, DCO drift (always 0), polyphony,
+  note priority, unison voice count, LFO trigger mode (`JunoLFO_ModeSw`), VCA/VCF
+  bypass.
+
+**How the factory presets use them**
+- **Vintage Factory (56)**: none of the extras except mod wheel → DCO LFO
+  (45 presets) and → VCF LFO (36): the original bender lever. The renders don't
+  move the wheel, so the translator ignores both. Effects other than chorus off.
+- **Arturia's own presets (129)** lean on them: velocity → VCF Freq (53),
+  mod wheel → VCF Freq (36), Env 2 → VCF Freq (32), aftertouch / LFO 2 → VCF Freq
+  (24 each), LFO 2 → PWM / Sub Vol / Reso (13–15), Env 2 → Pitch / Noise (13),
+  delay on in 77, reverb in 84, unison in ~95.
+- **Virus equivalents** (for when we take on Arturia presets): Env 2 → Virus
+  matrix source "Envelope 3/4"; LFO 2 → Virus LFO 1/2 (S&H, sync); velocity,
+  aftertouch and mod wheel → matrix slots; delay and reverb → Virus delay/reverb
+  (not calibrated). Unison → Virus unison. Not measured yet.
+
+## Juno → Virus calibration (measured 2026-10-26, tools/calibrate_juno.py)
+
+Bare test voices on both synths: filter open, no modulation, gate VCA, effects off.
+Tables in calibration.json (`juno_*`, `virus_*` names listed in each step's docstring).
+
+- **Jun-6 V's "brightness / timbre / time / movement" macros do nothing** in the
+  Vintage Factory presets (no routings): ignored.
+- **Virus Osc Shape between 64 (saw) and 127 (pulse) is an in-phase crossfade**
+  of saw and pulse: odd harmonics rise, even ones fall, smoothly. So one Virus
+  oscillator plays the Juno's saw+square (same DCO, phase-locked). Fitted Shape
+  wanders 80–99 with a flat loss; the translator uses the median (92) and
+  interpolates only Pulsewidth. Harmonic shape error 0.5–1.7 dB.
+- Juno "50 %" square is really **49.1 % duty** (even harmonics grow with k);
+  the PW knob runs duty 0.491 → 0.035 linearly. Juno square is +4.7 dB over its
+  saw; Virus pulse only +2.45 dB over its saw. Saw+square on the Juno +8.2 dB.
+- **Sub can't use the Virus sub oscillator**: Osc Mainvolume 0 mutes it along
+  with the oscillators, and the Juno sub reaches +5.7 dB over the saw. The sub
+  plays on osc 2 (pulse 50 %, −12 semitones) mixed by Osc Balance. Noise is not
+  muted by Mainvolume 0 (noise-only patches use that).
+- **VCF**: the Juno's "Hz" knob is ~1.5× the measured −6 dB corner (knob 1414 →
+  933 Hz). Virus analog 4-pole Cutoff 0–127 spans 33 Hz – 16 kHz (−6 dB corner).
+  Key tracking: Juno 1.0 = 1.08 (slightly over), Virus 127 = 0.95 (can't quite).
+  **Resonance**: Juno peaks reach +25 dB at 1.0 (+12 at 0.8); the Virus tops out
+  at +18 dB (127) — Juno res above ~0.9 can't be matched. Juno resonance also
+  dips the passband (−2 dB at 0.2), the Virus doesn't.
+  Env amount: Juno ~8.7 octaves per 1.0 (linear), Virus 96 = 6.2, 127 = 9.0 oct.
+  **Map the envelope by where the sweep peaks, not by its size in octaves.**
+  Many Juno presets rest far below the Virus floor (Brass 1's knob 6.7 ≈ 5 Hz;
+  Virus Cutoff 0 = 33 Hz), so the same 9-octave sweep overshot by ~3 octaves:
+  start loss 17 dB, and the fit stalled at 7 dB with cutoff 0. Below the
+  measurable range the Juno's knob → corner ratio (~0.68) is extended.
+- **The Virus filter envelope is much slower than its amp envelope** at the same
+  value (cutoff rise measured as the level above 2 kHz, 50 % point): attack 32 =
+  80 ms (amp: 4 ms), 64 = 365 ms; decay 64 = 155 ms to half-way. Seeding the
+  filter env from the amp tables turned Brass 1's 30 ms "blat" into a 0.4 s
+  swell. Juno attack 0.03 = 10 ms, 0.1 = 40 ms; decay 1.0 = 120 ms (cutoff
+  half-way). Tables `juno_fenv_*` / `virus_fenv_*`. (This probably also
+  explains the OB-Xf finding that filter attacks wanted fitting, not the table.)
+- **HPF**: Jun-6 V knob up to ~100 is off (corner < 25 Hz); 287 → 111 Hz,
+  588 → 249 Hz, 2708 → 1.56 kHz. Virus filter 2 high-pass in **Serial 4 with
+  Filter Balance 64 and Filter2 Cutoff Link off** works after the analog filter 1
+  (12 dB/oct); Cutoff2 32 → 106 Hz, 48 → 256 Hz, 80 → 1.44 kHz.
+- **Envelope**: Juno sustain is linear amplitude (0.5 = −6 dB, 0.1 = −20 dB).
+  Juno shown times run long: decay "1.0 s" falls 20 dB in 316 ms, release "1.0 s"
+  in 368 ms; attack "0.1 s" rises 10–90 % in 80 ms. Virus decay/release 64 ≈
+  600–680 ms to −20 dB, 96 ≈ 2.3–2.7 s. (Measuring a fast decay from the level
+  just before the peak reads silence: use the peak itself.)
+- **LFO**: Jun-6 V's shown rate is exact (1–20 Hz). Only Virus **LFO 3 has a
+  fade-in**, so the Juno LFO (with delay) maps to LFO 3: vibrato on its own
+  destination (Osc 1+2 Pitch), VCF and PWM through matrix slots (source "LFO 3
+  bipolar"). Juno delay 0.6 s → half depth at 0.5 s; Virus Fade-In 48 → 0.45 s,
+  64 → 0.78 s, 96 → 2.8 s. Juno vibrato 0.1 = 5 c, 0.3 = 20 c; Virus LFO 3
+  amount 24 = 5 c, 48 = 20 c. Juno VCF LFO 0.1 = ±0.08 oct; matrix LFO 3 →
+  cutoff +8 = ±0.1 oct. Many presets leave vibrato at 0.004 (0.7 c): ignored.
+  (Pitch tracking through a band-pass: skip its first ~150 ms start-up.)
+- **PWM**: LFO mode swings duty one-sided from ~0.49 down (knob 1.0: 0.33–0.49);
+  envelope mode goes 0.49 → 0.33 at full envelope. Virus matrix LFO 3 → PW
+  amount 63 = ±0.07 around Pulsewidth 64; filter env → PW 63 = 0.35 from PW 0.
+  Both just cover the Juno's range.
+- **Chorus** (Jun-6 V): modes I and II are stereo (L−R ≈ 0.62 of L+R), I+II is
+  mono; the mono sum keeps the modulation. Demos are stereo from now on.
+  The Juno's BBD wet path is low-passed: the chorus modulates below ~3 kHz and
+  leaves the top steady and 3 dB down. **Virus Classic chorus modulates the whole
+  band** (best fit loss 12 vs 1 run to run). **Virus Vintage chorus (type 2)
+  behaves like the Juno**: fit loss 1.5. Its mix is "Chorus/Mix2" (Chorus Mix does
+  nothing for it), "Chorus/X Over" keeps lows dry. Juno I → Vintage rate 17,
+  depth 86; II → rate 38, depth 86 (delay 64, feedback 0, Mix2 127, X Over 0).
+
+## Fitting on the demo phrase (2026-10-26, tools/phrase_fit.py)
+
+- Fits on one note and a chord at middle C don't carry to the phrase the user
+  hears. Long-term third-octave spectra of the level-matched phrases (Juno
+  batch 1, effects on): Bass 1 (played around 40–57) 5–20 dB dull above 200 Hz;
+  Brass 1 −5 dB at 3 kHz falling to −16 dB at 12 kHz; Harpsichord 3–9 dB too
+  bright above 3 kHz and its sub ~12 dB too loud.
+- Apparent "extra bass" 10–15 dB under the lowest note was in bands 40–55 dB
+  below the loudest: harmless. Compare absolute band levels, not just
+  differences. On chord stabs, part of it was analog-filter intermodulation:
+  Osc Mainvolume 64 → 32 cut Brass 1's 50 Hz band from +14 to +6 dB.
+- A last coordinate search on the phrase spectrum (cutoff, env amount, key
+  tracking, low/high EQ, Mainvolume, sub balance, HPF) brought band error to
+  0.7–1.8 dB from 1.3–5.6 dB.
+
 ## Virus A/B/C compatibility (looked at, then skipped by the user)
 
 - Single format (from source): A/B/C singles are 256 bytes (pages A + B

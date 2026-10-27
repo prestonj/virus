@@ -1,11 +1,13 @@
-"""Listening demos: a short melodic-techno phrase per patch, OB-Xf then Virus, loudness-matched.
+"""Listening demos: a short melodic-techno phrase per patch, reference then Virus, loudness-matched.
 
 usage: .venv/bin/python tools/demo.py                    # whole suite -> renders/suite_AB.wav
        .venv/bin/python tools/demo.py obx-bass-2 warmth  # just these, in this order
+       .venv/bin/python tools/demo.py --compare v2 ...   # per patch: OB-Xf, current Virus, <slug>-v2
 
 124 BPM, A minor, four bars of Am7 - Fmaj7 - C - G. Each patch plays the part that suits it
-(ROLES). The suite is one file: patch 1 OB-Xf, gap, patch 1 Virus, longer gap, patch 2 ...
-Timestamps for each part are printed and written next to the WAV.
+(ROLES). The suite is one file: patch 1 reference, gap, patch 1 Virus, longer gap, patch 2 ...
+Timestamps for each part are printed and written next to the WAV. Stereo (the Juno chorus is).
+The reference is an OB-Xf patch name, or "jun6:<preset>" for Arturia Jun-6 V.
 """
 import argparse
 import json
@@ -18,6 +20,7 @@ import numpy as np
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from ab_render import write  # noqa: E402
 from render_lib import RATE, ROOT, render_obxf_seq, render_virus_seq  # noqa: E402
+import jun6  # noqa: E402
 from virus_patch import Patch  # noqa: E402
 
 BPM = 124
@@ -106,7 +109,30 @@ ROLES = {
     "steel-string-guitar-2": ("Steel String Guitar 2", "arp", "Steel String Guitar 2"),
     "kawari": ("Kawari", "stabs", "Kawari"),
     "acidisillification": ("Acidisillification", "arp", "Acidisillification"),
+    # Juno (Arturia Jun-6 V, original Juno-60 factory sounds)
+    "juno-brass-1": ("jun6:Vintage Factory/17 Brass 1", "stabs", "Juno Brass 1"),
+    "juno-phase-brass": ("jun6:Vintage Factory/18 Phase Brass", "swells", "Juno Phase Brass"),
+    "juno-strings-2": ("jun6:Vintage Factory/12 Strings 2", "pad", "Juno Strings 2"),
+    "juno-bass-1": ("jun6:Vintage Factory/31 Bass 1", "bass", "Juno Bass 1"),
+    "juno-clavichord-1": ("jun6:Vintage Factory/33 Clavichord 1", "arp", "Juno Clavichord 1"),
+    "juno-harpsichord": ("jun6:Vintage Factory/25 Harpsichord", "arp", "Juno Harpsichord"),
 }
+
+
+def ref_seq(ref, seq, tail):
+    """Stereo reference render: OB-Xf patch name, or 'jun6:<preset>'."""
+    if ref.startswith("jun6:"):
+        jun6.load(ref[5:])
+        return jun6.render_seq(seq, tail, stereo=True)
+    return render_obxf_seq(ref, seq, tail=tail, stereo=True)
+
+
+def ref_label(ref):
+    return "Juno" if ref.startswith("jun6:") else "OB-Xf"
+
+
+def gap(s):
+    return np.zeros((int(s * RATE), 2))
 
 
 def guess_role(patch):
@@ -124,41 +150,41 @@ def level_match(x):
 
 
 def demo_pair(ref, syx, role):
-    """Return (OB-Xf, Virus) renders of the role's phrase, loudness-matched."""
+    """Return (reference, Virus) stereo renders of the role's phrase, loudness-matched."""
     phrase, tail = PHRASES[role]
     seq = phrase()
-    a = level_match(render_obxf_seq(ref, seq, tail=tail))
-    b = level_match(render_virus_seq(Patch.from_syx(syx), seq, tail=tail))
+    a = level_match(ref_seq(ref, seq, tail))
+    b = level_match(render_virus_seq(Patch.from_syx(syx), seq, tail=tail, stereo=True))
     return a, b
 
 
 def demo(slug, ref=None, role=None, out=None):
-    """One patch: renders/<slug>/listen/demo_AB.wav (OB-Xf, gap, Virus)."""
+    """One patch: renders/<slug>/listen/demo_AB.wav (reference, gap, Virus)."""
     syx = ROOT / "patches" / f"{slug}.syx"
     ref = ref or ROLES[slug][0]
     role = role or (ROLES[slug][1] if slug in ROLES else guess_role(Patch.from_syx(syx)))
     a, b = demo_pair(ref, syx, role)
     out = pathlib.Path(out or ROOT / "renders" / slug / "listen")
     out.mkdir(parents=True, exist_ok=True)
-    write(out / "demo_AB.wav", np.concatenate([a, np.zeros(int(AB_GAP * RATE)), b]))
+    write(out / "demo_AB.wav", np.concatenate([a, gap(AB_GAP), b]))
     print("wrote", out / "demo_AB.wav")
 
 
 def suite(slugs, out):
-    # Virus renders run as parallel subprocesses; OB-Xf runs in-process, one at a time
+    # Virus renders run as parallel subprocesses; references run in-process, one at a time
     seqs = [(PHRASES[ROLES[s][1]][0](), PHRASES[ROLES[s][1]][1]) for s in slugs]
     with ThreadPoolExecutor() as ex:
         vs = list(ex.map(lambda i: render_virus_seq(Patch.from_syx(ROOT / "patches" / f"{slugs[i]}.syx"),
-                                                    *seqs[i]), range(len(slugs))))
-    pairs = [(level_match(render_obxf_seq(ROLES[s][0], seq, tail=tail)), level_match(v))
+                                                    *seqs[i], stereo=True), range(len(slugs))))
+    pairs = [(level_match(ref_seq(ROLES[s][0], seq, tail)), level_match(v))
              for s, (seq, tail), v in zip(slugs, seqs, vs)]
     parts, marks, t = [], [], 0.0
     for slug, (a, b) in zip(slugs, pairs):
         title = ROLES[slug][2]
-        for label, x, gap in ((f"{title}: OB-Xf", a, AB_GAP), (f"{title}: Virus", b, PATCH_GAP)):
+        for label, x, g in ((f"{title}: {ref_label(ROLES[slug][0])}", a, AB_GAP), (f"{title}: Virus", b, PATCH_GAP)):
             marks.append((round(t, 1), label))
-            parts += [x, np.zeros(int(gap * RATE))]
-            t += len(x) / RATE + gap
+            parts += [x, gap(g)]
+            t += len(x) / RATE + g
     write(out, np.concatenate(parts))
     out.with_suffix(".json").write_text(json.dumps(marks, indent=1))
     for s, label in marks:
@@ -166,12 +192,39 @@ def suite(slugs, out):
     print("wrote", out)
 
 
+def compare(slugs, suffix, out):
+    """Per patch: reference, the current patches/<slug>.syx, then patches/<slug>-<suffix>.syx."""
+    jobs = [(s, v) for s in slugs for v in (s, f"{s}-{suffix}")]
+    seqs = {s: (PHRASES[ROLES[s][1]][0](), PHRASES[ROLES[s][1]][1]) for s in slugs}
+    with ThreadPoolExecutor() as ex:
+        vs = dict(zip(jobs, ex.map(lambda j: level_match(render_virus_seq(
+            Patch.from_syx(ROOT / "patches" / f"{j[1]}.syx"), *seqs[j[0]], stereo=True)), jobs)))
+    parts, marks, t = [], [], 0.0
+    for s in slugs:
+        seq, tail = seqs[s]
+        rows = [(ref_label(ROLES[s][0]), level_match(ref_seq(ROLES[s][0], seq, tail)), AB_GAP),
+                ("Virus current", vs[(s, s)], AB_GAP), (f"Virus {suffix}", vs[(s, f"{s}-{suffix}")], PATCH_GAP)]
+        for label, x, g in rows:
+            marks.append((round(t, 1), f"{ROLES[s][2]}: {label}"))
+            parts += [x, gap(g)]
+            t += len(x) / RATE + g
+    write(out, np.concatenate(parts))
+    out.with_suffix(".json").write_text(json.dumps(marks, indent=1))
+    for m, label in marks:
+        print(f"{int(m // 60)}:{m % 60:04.1f}  {label}")
+    print("wrote", out)
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("slugs", nargs="*", default=list(ROLES))
+    ap.add_argument("slugs", nargs="*", default=[s for s in ROLES if not s.startswith("juno-")])
     ap.add_argument("--out", default=str(ROOT / "renders" / "suite_AB.wav"))
+    ap.add_argument("--compare", metavar="SUFFIX", help="compare each patch with patches/<slug>-SUFFIX.syx")
     a = ap.parse_args()
-    suite(a.slugs, pathlib.Path(a.out))
+    if a.compare:
+        compare(a.slugs, a.compare, pathlib.Path(a.out))
+    else:
+        suite(a.slugs, pathlib.Path(a.out))
 
 
 if __name__ == "__main__":

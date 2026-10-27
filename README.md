@@ -16,12 +16,13 @@ auditioned through an emulator before loading onto the hardware.
 
 **Read [docs/PROCESS.md](docs/PROCESS.md) and [docs/FINDINGS.md](docs/FINDINGS.md)
 first** — how we work (and what the listener wants), and what we've learned
-about the format, the controls and the tooling.
+about the format, the controls and the tooling. [docs/VINTAGE_TARGETS.md](docs/VINTAGE_TARGETS.md)
+ranks other vintage synths by how well the Virus can model them.
 
 ## Setup
 
 ```sh
-python3 -m venv .venv && .venv/bin/pip install numpy scipy matplotlib
+python3 -m venv .venv && .venv/bin/pip install numpy scipy matplotlib pedalboard
 ./build.sh      # clones Gearmulator + OB-Xf into third_party/, builds virusRender and the obxfpy module
 ```
 
@@ -46,8 +47,13 @@ $R --rom rom/firmware.bin --syx x.syx --notes 48,55,60,64 \
 
 `--seq notes.txt` plays a note list instead of one held chord (`<start s>
 <length s> <note> <velocity>` per line). `tools/demo.py` uses it to render a
-short phrase per patch, OB-Xf then Virus, into one listening file
+short phrase per patch, reference then Virus, into one stereo listening file
 (`renders/suite_AB.wav`).
+
+Juno sounds come from Arturia's Jun-6 V (you need your own copy):
+`tools/calibrate_juno.py` measures the control scales and
+`tools/translate_juno.py "Vintage Factory/17 Brass 1" --slug juno-brass-1`
+translates a preset.
 
 `--dump-out` saves the edit buffer as the firmware holds it after loading.
 ROM singles in the older format come back upgraded to TI format (version
