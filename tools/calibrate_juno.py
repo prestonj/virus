@@ -625,8 +625,79 @@ def cal_chorus(cal):
     cal["juno_chorus"] = out
 
 
+BLIP = [(0.0, 0.03, NOTE, 100)]  # a 30 ms note: the echoes stand apart
+
+
+def echo_db(x, period, n=5):
+    """Stereo blip render -> level (dB re the dry blip) of echoes 1..n at multiples of period, per channel."""
+    w = int(0.01 * RATE)
+
+    def at(t, c):
+        i = int(t * RATE)
+        s = x[max(0, i - 2 * w):i + 4 * w, c]
+        return max(20 * np.log10(np.sqrt(np.mean(s[j:j + w] ** 2)) + 1e-9) for j in range(0, len(s) - w, w // 2))
+    return np.array([[at(k * period, c) - at(0.0, c) for c in (0, 1)] for k in range(1, n + 1)])
+
+
+def per_echo_db(e):
+    """Average level change from one echo to the next (left channel, echoes above -50 dB)."""
+    v = e[:, 0][e[:, 0] > -50]
+    return float(np.polyfit(np.arange(len(v)), v, 1)[0])
+
+
+def cal_delay(cal):
+    """Delay: wet/send -> first echo re dry, feedback -> dB per repeat, Jun-6 V stereo -> right/left time.
+
+    Tables juno_delay_wet_db / virus_delay_send_db (first echo re dry, dB), juno_delay_fb_db /
+    virus_delay_fb_db (per repeat, dB), juno_delay_stereo_ratio, virus_delay_ms. Virus: Classic
+    type, Simple Delay, delay modulation 0 (both channels alike)."""
+    from render_lib import render_virus_seq
+    jfx = dict(fx_section_on_off=True, delay_on_off=True, reverb_on_off=False, chorus_modes="Off",
+               delay_sync=False, delay_time_unsync_ms=300.0, delay_stereo=0.0, delay_feedback=0.0, delay_dry_wet=0.5)
+
+    def jrender(**o):
+        jun6.load("Default", {**JUNO_BASE, **jfx, **o})
+        return jun6.render_seq(BLIP, 2.0, stereo=True)
+    cal["juno_delay_wet_db"] = {str(w): round(float(echo_db(jrender(delay_dry_wet=w), 0.3, 1)[0].mean()), 2)
+                                for w in (0.1, 0.25, 0.4, 0.5, 0.6, 0.75, 0.9)}
+    cal["juno_delay_fb_db"] = {str(f): round(per_echo_db(echo_db(jrender(delay_feedback=f), 0.3)), 2)
+                               for f in (0.15, 0.25, 0.35, 0.45, 0.55, 0.7, 0.85)}
+    ratios = {}
+    for s in (0.0, 0.25, 0.5, 0.75, 1.0):
+        x = jrender(delay_stereo=s)
+        first = [0.15 + np.argmax(np.abs(x[int(0.15 * RATE):int(0.5 * RATE), c])) / RATE for c in (0, 1)]
+        ratios[str(s)] = round(float(first[1] / first[0]), 3)  # first right echo / first left echo
+    cal["juno_delay_stereo_ratio"] = ratios
+    print("  Juno wet", cal["juno_delay_wet_db"], "\n  Juno fb", cal["juno_delay_fb_db"], "\n  Juno R/L", ratios)
+
+    base = virus_base().set(Amp_Env_Attack=0, Amp_Env_Decay=127, Amp_Env_Sustain=127, Amp_Env_Release=0)
+    base.set(Delay_Type=0, Delay_Mode=1, Delay_Time=55, Delay_Feedback=0, Delay_Send=64)
+    base["Delay/Tape Delay Modulation"] = 0
+    period = 55 * 5.46e-3  # the Virus shows Delay Time in 5.46 ms steps
+
+    def vrender(**o):
+        p = base.copy()
+        for k, v in o.items():
+            p[k.replace("_", " ")] = v
+        return render_virus_seq(p, BLIP, tail=2.0, stereo=True)
+    sends, fbs, times = (40, 64, 80, 90, 100, 110, 120), (10, 20, 30, 40, 50, 60, 70, 80), (20, 40, 67, 90, 120)
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor() as ex:
+        xs = list(ex.map(lambda o: vrender(**o), [dict(Delay_Send=s) for s in sends] + [dict(Delay_Feedback=f, Delay_Send=100) for f in fbs]
+                         + [dict(Delay_Time=t) for t in times]))
+    cal["virus_delay_send_db"] = {str(s): round(float(echo_db(x, period, 1)[0].mean()), 2) for s, x in zip(sends, xs)}
+    cal["virus_delay_fb_db"] = {str(f): round(per_echo_db(echo_db(x, period)), 2) for f, x in zip(fbs, xs[len(sends):])}
+    ms = {}
+    for t, x in zip(times, xs[-len(times):]):
+        onset = lambda m: np.argmax(m > 0.3 * m.max()) / RATE  # noqa: E731
+        m = np.abs(x[int(0.05 * RATE):, 0])
+        ms[str(t)] = round(1000 * (0.05 + onset(m) - onset(np.abs(x[:int(0.05 * RATE), 0]))), 1)  # echo - dry onset
+    cal["virus_delay_ms"] = ms
+    print("  Virus send", cal["virus_delay_send_db"], "\n  Virus fb", cal["virus_delay_fb_db"], "\n  Virus ms", ms)
+
+
 STEPS = {"waves": cal_waves, "levels": cal_levels, "filter": cal_filter, "env": cal_env_amount, "hpf": cal_hpf,
-         "times": cal_env_times, "fenv": cal_filter_env, "lfo": cal_lfo, "chorus": cal_chorus}
+         "times": cal_env_times, "fenv": cal_filter_env, "lfo": cal_lfo, "chorus": cal_chorus, "delay": cal_delay}
 
 
 def main():

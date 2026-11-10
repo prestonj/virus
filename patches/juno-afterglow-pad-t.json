@@ -1,0 +1,447 @@
+{
+ "reference": "Jun-6 V: Factory/Afterglow Pad",
+ "hold": 1.9,
+ "tail": 4.0,
+ "mapping_notes": [
+  "noise -30.9 dB re saw -> Noise Volume 13",
+  "LFO delay mode Rise treated as delay + rise",
+  "vibrato 11.0 c at 2.90 Hz -> LFO 3 amount 36",
+  "portamento 31 ms not translated",
+  "Env 2 -> DCO Noise Vol +1.00 -> Envelope 3 -> matrix slot 4",
+  "LFO 2 (Sine, 0.33 Hz) -> delay feedback +0.38 -> LFO 1 assign (not calibrated)",
+  "AfterTouch -> HPF Freq +0.12 not translated",
+  "velocity -> VCF +0.14 -> matrix slot 5 (fitted)",
+  "mod wheel -> VCF resonance +0.86 -> matrix slot 6 (not calibrated)",
+  "delay 364 ms, feedback 0.35, wet 0.51, right/left 1.13 -> Delay Time 67, Feedback 44, Send 93, mode 5 (right echoes at 1/1.14 of the time)",
+  "Env 2 -> noise: no swell in the Jun-6 V render (2.3 dB), Envelope 3 kept from the tables",
+  "velocity -> VCF: no response in the Jun-6 V render (-0.08 oct), amount kept as mapped"
+ ],
+ "mapped": {
+  "Amp Env Attack": [
+   0,
+   89
+  ],
+  "Amp Env Decay": [
+   127,
+   71
+  ],
+  "Amp Env Release": [
+   4,
+   91
+  ],
+  "Amp Env Sustain": [
+   127,
+   95
+  ],
+  "Assign 4 Amount": [
+   64,
+   127
+  ],
+  "Assign 4 Destination": [
+   0,
+   23
+  ],
+  "Assign 4 Source": [
+   3,
+   38
+  ],
+  "Assign 5 Amount": [
+   64,
+   73
+  ],
+  "Assign 5 Destination": [
+   0,
+   24
+  ],
+  "Assign 5 Source": [
+   3,
+   24
+  ],
+  "Assign 6 Amount": [
+   64,
+   118
+  ],
+  "Assign 6 Destination": [
+   0,
+   26
+  ],
+  "Assign1 Amount": [
+   100,
+   64
+  ],
+  "Assign1 Source": [
+   3,
+   0
+  ],
+  "Cutoff": [
+   127,
+   48
+  ],
+  "Delay Feedback": [
+   0,
+   44
+  ],
+  "Delay Mode": [
+   1,
+   5
+  ],
+  "Delay Send": [
+   0,
+   93
+  ],
+  "Delay Time": [
+   64,
+   67
+  ],
+  "Delay/Tape Delay Modulation": [
+   12,
+   0
+  ],
+  "Envelope 3/Attack": [
+   20,
+   104
+  ],
+  "Envelope 3/Decay": [
+   70,
+   62
+  ],
+  "Envelope 3/Release": [
+   70,
+   101
+  ],
+  "Envelope 3/Sustain": [
+   0,
+   35
+  ],
+  "Filter Balance": [
+   64,
+   0
+  ],
+  "Filter Env Attack": [
+   0,
+   63
+  ],
+  "Filter Env Decay": [
+   46,
+   80
+  ],
+  "Filter Env Release": [
+   127,
+   91
+  ],
+  "Filter Env Sustain": [
+   0,
+   95
+  ],
+  "Filter1 Env Amt": [
+   0,
+   34
+  ],
+  "Filter1 Env Polarity": [
+   1,
+   0
+  ],
+  "Filter1 Keyfollow": [
+   64,
+   95
+  ],
+  "Filter1 Mode": [
+   0,
+   7
+  ],
+  "LFO1 Assign Amount": [
+   64,
+   88
+  ],
+  "LFO1 Assign Dest": [
+   0,
+   69
+  ],
+  "Lfo1 Mode": [
+   0,
+   1
+  ],
+  "Lfo1 Rate": [
+   48,
+   39
+  ],
+  "Lfo1 Shape": [
+   1,
+   0
+  ],
+  "Lfo3 Fade-In Time": [
+   0,
+   49
+  ],
+  "Lfo3 Rate": [
+   94,
+   86
+  ],
+  "Noise Volume": [
+   0,
+   13
+  ],
+  "Osc Balance": [
+   64,
+   7
+  ],
+  "Osc Lfo3 Amount": [
+   0,
+   36
+  ],
+  "Osc1 Pulsewidth": [
+   0,
+   2
+  ],
+  "Osc1 Shape": [
+   64,
+   127
+  ],
+  "Osc2 Detune": [
+   32,
+   0
+  ],
+  "Osc2 Semitone": [
+   64,
+   52
+  ],
+  "Osc2 Shape": [
+   64,
+   127
+  ]
+ },
+ "amp_level_error_db": 1.54,
+ "band_shape_error_db": 2.66,
+ "cutoff_fit": 40,
+ "cutoff_trimmed": 35,
+ "brightness_gap_semitones": 0.78,
+ "changes_from_init": {
+  "Amp Env Attack": [
+   0,
+   89
+  ],
+  "Amp Env Decay": [
+   127,
+   108
+  ],
+  "Amp Env Release": [
+   4,
+   89
+  ],
+  "Amp Env Sustain": [
+   127,
+   95
+  ],
+  "Assign 4 Amount": [
+   64,
+   127
+  ],
+  "Assign 4 Destination": [
+   0,
+   23
+  ],
+  "Assign 4 Source": [
+   3,
+   38
+  ],
+  "Assign 5 Amount": [
+   64,
+   73
+  ],
+  "Assign 5 Destination": [
+   0,
+   24
+  ],
+  "Assign 5 Source": [
+   3,
+   24
+  ],
+  "Assign 6 Amount": [
+   64,
+   118
+  ],
+  "Assign 6 Destination": [
+   0,
+   26
+  ],
+  "Assign1 Amount": [
+   100,
+   64
+  ],
+  "Assign1 Source": [
+   3,
+   0
+  ],
+  "Cutoff": [
+   127,
+   35
+  ],
+  "Delay Feedback": [
+   0,
+   60
+  ],
+  "Delay Mode": [
+   1,
+   5
+  ],
+  "Delay Send": [
+   0,
+   93
+  ],
+  "Delay Time": [
+   64,
+   67
+  ],
+  "Dly Depth ": [
+   12,
+   0
+  ],
+  "Envelope 3/Attack": [
+   20,
+   104
+  ],
+  "Envelope 3/Decay": [
+   70,
+   62
+  ],
+  "Envelope 3/Release": [
+   70,
+   109
+  ],
+  "Envelope 3/Sustain": [
+   0,
+   35
+  ],
+  "Filter Balance": [
+   64,
+   0
+  ],
+  "Filter Env Attack": [
+   0,
+   69
+  ],
+  "Filter Env Decay": [
+   46,
+   22
+  ],
+  "Filter Env Release": [
+   127,
+   91
+  ],
+  "Filter Env Sustain": [
+   0,
+   93
+  ],
+  "Filter1 Env Amt": [
+   0,
+   52
+  ],
+  "Filter1 Env Polarity": [
+   1,
+   0
+  ],
+  "Filter1 Keyfollow": [
+   64,
+   103
+  ],
+  "Filter1 Mode": [
+   0,
+   7
+  ],
+  "HighEQ Gain": [
+   64,
+   68
+  ],
+  "LFO1 Assign Amount": [
+   64,
+   88
+  ],
+  "LFO1 Assign Dest": [
+   0,
+   69
+  ],
+  "Lfo1 Mode": [
+   0,
+   1
+  ],
+  "Lfo1 Rate": [
+   48,
+   39
+  ],
+  "Lfo1 Shape": [
+   1,
+   0
+  ],
+  "Lfo3 Fade-In Time": [
+   0,
+   49
+  ],
+  "Lfo3 Rate": [
+   94,
+   86
+  ],
+  "LowEQ Gain": [
+   64,
+   40
+  ],
+  "Noise Color": [
+   64,
+   56
+  ],
+  "Noise Volume": [
+   0,
+   13
+  ],
+  "Osc Balance": [
+   64,
+   1
+  ],
+  "Osc Lfo3 Amount": [
+   0,
+   36
+  ],
+  "Osc Mainvolume": [
+   64,
+   62
+  ],
+  "Osc1 Pulsewidth": [
+   0,
+   2
+  ],
+  "Osc1 Shape": [
+   64,
+   127
+  ],
+  "Osc2 Detune": [
+   32,
+   0
+  ],
+  "Osc2 Semitone": [
+   64,
+   52
+  ],
+  "Osc2 Shape": [
+   64,
+   127
+  ]
+ },
+ "variant_edits": [
+  "Amp Env Release 90 -> 89 (phrase fit)",
+  "Delay Feedback 44 -> 60 (phrase fit)",
+  "Envelope 3/Release 101 -> 109 (phrase fit)",
+  "Filter Env Attack 61 -> 69 (phrase fit)",
+  "Filter Env Decay 30 -> 22 (phrase fit)",
+  "Filter1 Env Amt 50 -> 52 (phrase fit)",
+  "Filter1 Keyfollow 95 -> 103 (phrase fit)",
+  "HighEQ Gain 64 -> 68 (phrase fit)",
+  "LowEQ Gain 64 -> 40 (phrase fit)",
+  "Noise Color 64 -> 56 (phrase fit)",
+  "Osc Balance 7 -> 1 (phrase fit)",
+  "Osc Mainvolume 64 -> 62 (phrase fit)"
+ ],
+ "phrase_error_db": [
+  7.97,
+  3.59
+ ],
+ "phrase_fit_time": true
+}

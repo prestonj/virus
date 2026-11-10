@@ -16,11 +16,14 @@ SECTIONS = [  # (regex on parameter name, section)
     (r"^Transpose|^Key Mode|^Patch Volume|^Unison", "Common"),
     (r"^Osc1", "Osc 1"), (r"^Osc2", "Osc 2"), (r"^Osc Balance|^Osc Mainvolume|^Sub|^Noise", "Mixer"),
     (r"^Filter Env", "Filter Env"), (r"^Filter1|^Cutoff$", "Filter 1"), (r"^Filter2|^Cutoff2", "Filter 2"),
-    (r"^Filter", "Filters"), (r"^Amp Env", "Amp Env"), (r"^Lfo1", "LFO 1"),
-    (r"Velocity$", "Velocity Map"), (r"EQ ", "EQ"),
+    (r"^Filter", "Filters"), (r"^Amp Env", "Amp Env"), (r"^Envelope 3", "Envelope 3"), (r"^Envelope 4", "Envelope 4"),
+    (r"^Lfo1|^LFO1", "LFO 1"), (r"^Lfo2|^LFO2", "LFO 2"), (r"^Lfo3|Lfo3 Amount", "LFO 3"),
+    (r"^Assign", "Mod Matrix"), (r"Velocity$", "Velocity Map"), (r"EQ ", "EQ"), (r"^Chorus", "Chorus"),
+    (r"^Delay|^Dly", "Delay"), (r"^Reverb", "Reverb"),
 ]
 ORDER = ["Common", "Osc 1", "Osc 2", "Mixer", "Filters", "Filter 1", "Filter 2", "Filter Env", "Amp Env",
-         "LFO 1", "Velocity Map", "EQ", "Other"]
+         "Envelope 3", "Envelope 4", "LFO 1", "LFO 2", "LFO 3", "Mod Matrix", "Velocity Map", "EQ", "Chorus",
+         "Delay", "Reverb", "Other"]
 
 
 def value_lists():
@@ -28,6 +31,9 @@ def value_lists():
     out = {}
     for m in re.finditer(r'"([\w-]+)"\s*:\s*\[\s*((?:"[^"]*"\s*,?\s*)+)\]', text):
         out[m.group(1)] = re.findall(r'"([^"]*)"', m.group(2))
+    for m in re.finditer(r'"(modmatrix\w+)"\s*:\s*\{([^}]*)\}', text):  # index -> name maps (matrix sources/destinations)
+        pairs = {int(k): v for k, v in re.findall(r'"(\d+)"\s*:\s*"([^"]*)"', m.group(2))}
+        out[m.group(1)] = [pairs.get(i, str(i)) for i in range(max(pairs) + 1)]
     return out
 
 
@@ -84,7 +90,9 @@ def card(slug, title=None):
               f"- {amp} band-shape error {report['band_shape_error_db']} dB.",
               f"- Cutoff trimmed {report['cutoff_fit']} → {report['cutoff_trimmed']} so the held note (attack and "
               f"sustain medians) matches {short}'s brightness (gap {gap:+} semitones).",
-              f"- Listening file: `renders/{slug}/listen/demo_AB.wav` ({short} first, then Virus, "
+              *([f"- Demo phrase (effects on): error {report['phrase_error_db'][0]} → {report['phrase_error_db'][1]} dB "
+                 "after the phrase fit" + (" (spectrum + loudness over time)." if report.get("phrase_fit_time") else " (spectrum).")] if report.get("phrase_error_db") else []),
+              f"- Listening file:`renders/{slug}/listen/demo_AB.wav` ({short} first, then Virus, "
               f"loudness-matched).",
               "- " + report.get("verdict", "Not yet checked by ear."), ""]
     out = ROOT / "patches" / f"{slug}.md"

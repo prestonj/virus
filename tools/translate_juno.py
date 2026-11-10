@@ -17,10 +17,18 @@ Juno voice -> Virus:
                                   destination, VCF and PWM through matrix slots
   PWM from the envelope           matrix: filter envelope -> osc 1 pulse width
   chorus I / II                   Vintage chorus (BBD-like: leaves the top steady), fitted per mode
+
+Arturia's extras (map_extended; modulation grid read from the preset file):
+  Env 2                           Envelope 3, through matrix slot 4 (-> noise level fitted)
+  velocity -> VCF                 matrix slot 5, Velocity On -> cutoff (fitted on vel 40 vs 120)
+  mod wheel -> VCF reso           matrix slot 6 (not calibrated: the demos don't move the wheel)
+  LFO 2 -> delay feedback         LFO 1 (mono, sine) assign -> Delay Feedback (not calibrated)
+  stereo delay                    Classic Simple Delay: time, feedback, send from calibration
 """
 import argparse
 import json
 import math
+import re
 import pathlib
 import sys
 
@@ -35,7 +43,8 @@ from render_lib import ROOT, band_shape, level_db, render_virus_many  # noqa: E4
 from translate import CAL, held_brightness, timing  # noqa: E402
 from virus_patch import Patch  # noqa: E402
 
-FX_OFF = dict(fx_section_on_off=False)  # fit stages compare dry voices; chorus is added at the end
+FX_OFF = dict(fx_section_on_off=False)  # fit stages compare dry voices; effects are added at the end
+FX_KEYS = ("Chorus/Type", "Delay Mode", "Delay Send")  # zeroed on the Virus while fitting
 
 
 def table(name):
@@ -219,13 +228,78 @@ def map_structure(d):
         notes.append("unison not translated")
     if d["portamento_ms"] > 0.5:
         notes.append(f"portamento {d['portamento_ms']:.0f} ms not translated")
-    for k in ("delay_on_off", "reverb_on_off"):
-        wet = d[k.replace("on_off", "dry_wet")]
-        if d[k] and wet > 0.01:
-            notes.append(f"{k.split('_')[0]} (wet {wet:.2f}) not translated")
+    if d["reverb_on_off"] and d["reverb_dry_wet"] > 0.01:
+        notes.append(f"reverb (wet {d['reverb_dry_wet']:.2f}) not translated")
     if d["arpeggiator_on_off"]:
         notes.append("arpeggiator not translated")
     return p, notes
+
+
+def preset_mods(name):
+    """Active routings of the preset's modulation grid: {(target, source): amount -1..1}."""
+    mods = {}
+    for k, v in jun6.preset_state(name).items():
+        m = re.fullmatch(r"Modulations_(.+)_(Env 2|LFO 2|Velocity|AfterTouch|ModWheel)_Amount", k)
+        if m and abs(v - 0.5) > 0.005:  # stored 0-1, 0.5 = off
+            mods[(m[1], m[2])] = round(2 * v - 1, 3)
+    return mods
+
+
+ENV2_DEST = {"DCO Noise Vol": 23, "VCF Freq": 24, "DCO PWM": 7, "DCO Pitch": 9}  # Virus matrix destinations
+PINGPONG = {1: 1.0, 5: 8 / 7, 3: 4 / 3, 2: 2.0}  # Virus Delay Mode -> left/right time ratio (Simple, 8:7, 4:3, 2:1)
+LFO_HZ_120BPM = {"1.5 Bar": 1 / 3.0, "1 Bar": 0.5, "2 Bar": 0.25, "4 Bar": 0.125, "1/2": 1.0, "1/4": 2.0}
+
+
+def map_extended(d, mods, p, notes):
+    """Jun-6 V's additions (Env 2, LFO 2, velocity/wheel routings, delay) onto the mapped patch."""
+    for (target, src), a in sorted(mods.items()):
+        if src == "Env 2" and target in ENV2_DEST:
+            slot = [k for k in ("Assign 4 Destination", "Assign 4 Destination 2", "Assign 4 Destination 3") if not p[k]][0]
+            p[slot] = ENV2_DEST[target]
+            p[slot.replace("Destination", "Amount")] = 64 + int(round(63 * a))
+            p["Assign 4 Source"] = 38  # Envelope 3
+            notes.append(f"Env 2 -> {target} {a:+.2f} -> Envelope 3 -> matrix slot 4")
+        elif src == "Velocity" and target == "VCF Freq":
+            p.set(Assign_5_Source=24, Assign_5_Destination=24, Assign_5_Amount=64 + int(round(63 * a)))
+            notes.append(f"velocity -> VCF {a:+.2f} -> matrix slot 5 (fitted)")
+        elif src == "ModWheel" and target == "VCF Reso":
+            p.set(Assign_6_Source=3, Assign_6_Destination=26, Assign_6_Amount=64 + int(round(63 * a)))
+            notes.append(f"mod wheel -> VCF resonance {a:+.2f} -> matrix slot 6 (not calibrated)")
+        elif src == "LFO 2" and target == "Delay Feedback" and d["delay_on_off"]:
+            hz = LFO_HZ_120BPM.get(d["lfo_2_rate_sync"]) if d["lfo_2_sync"] else d["lfo_2_rate_unsync_hz"]
+            if hz is None:
+                notes.append(f"LFO 2 rate {d['lfo_2_rate_sync']} unknown: LFO 2 -> delay feedback not translated")
+                continue
+            shape = {"Sine": 0, "Triangle": 1, "Saw": 2, "Square": 3, "S&H": 4}.get(d["lfo_2_waveform"], 0)
+            p.set(Lfo1_Shape=shape, Lfo1_Mode=1, Lfo1_Rate=inv("virus_lfo1_rate_hz", hz, logy=True),
+                  LFO1_Assign_Dest=69, LFO1_Assign_Amount=64 + int(round(63 * a)))
+            notes.append(f"LFO 2 ({d['lfo_2_waveform']}, {hz:.2f} Hz) -> delay feedback {a:+.2f} -> LFO 1 assign (not calibrated)")
+        elif abs(a) >= 0.05:
+            notes.append(f"{src} -> {target} {a:+.2f} not translated")
+    if p["Assign 4 Source"] == 38:  # Envelope 3: Env 2's times through the amp-envelope tables (then fitted)
+        s = float(d["envelope_2_sustain"])
+        p.set(**{"Envelope 3/Attack": inv("virus_attack_ms", at("juno_attack_ms", d["envelope_2_attack_s"], logx=True)),
+                 "Envelope 3/Decay": inv("virus_decay_ms", at("juno_decay_ms", d["envelope_2_decay_s"], logx=True), logy=True),
+                 "Envelope 3/Sustain": 0 if s < 0.01 else inv("virus_sustain_db", at("juno_sustain_db", s)),
+                 "Envelope 3/Release": inv("virus_release_ms", at("juno_release_ms", d["envelope_2_release_s"], logx=True), logy=True)})
+
+    if d["fx_section_on_off"] and d["delay_on_off"] and d["delay_dry_wet"] > 0.01:
+        if d["delay_sync"]:
+            notes.append(f"delay synced {d['delay_time_sync']}: translated at 124 BPM is not supported, skipped")
+        else:
+            ms = d["delay_time_unsync_ms"]
+            # Jun-6 V's stereo knob lengthens the right side's delay; the Virus ping-pong modes instead put
+            # the right echoes at 1/ratio of the left time. Not the same timing, but the same decorrelated width
+            r = at("juno_delay_stereo_ratio", d["delay_stereo"])
+            mode = min(PINGPONG, key=lambda m: abs(PINGPONG[m] - r))
+            p.set(Delay_Type=0, Delay_Mode=mode, Delay_Time=inv("virus_delay_ms", ms),
+                  Delay_Feedback=inv("virus_delay_fb_db", at("juno_delay_fb_db", d["delay_feedback"])),
+                  Delay_Send=inv("virus_delay_send_db", at("juno_delay_wet_db", d["delay_dry_wet"])))
+            p["Delay/Tape Delay Modulation"] = 0
+            notes.append(f"delay {ms:.0f} ms, feedback {d['delay_feedback']:.2f}, wet {d['delay_dry_wet']:.2f}, right/left "
+                         f"{r:.2f} -> Delay Time {p['Delay Time']}, Feedback {p['Delay Feedback']}, Send {p['Delay Send']}, "
+                         f"mode {mode} (right echoes at 1/{PINGPONG[mode]:.2f} of the time)")
+    return p
 
 
 # ---------------------------------------------------------------- references
@@ -262,9 +336,9 @@ def virus_brightness(patches, examples, hold, tail):
 def translate(name, slug, log=print):
     d = juno_params(name)
     base, notes = map_structure(d)
-    chorus = {"Chorus/Type": base["Chorus/Type"]}
-    dry = base.copy()
-    dry["Chorus/Type"] = 0
+    map_extended(d, preset_mods(name), base, notes)
+    fx = {k: base[k] for k in FX_KEYS}
+    dry = base.copy().set(**{k.replace(" ", "_"): 0 for k in FX_KEYS})
     hold, tail = timing(None, render=juno_render(name))
     examples = [EXAMPLES["1_single"], EXAMPLES["3_chord"]]
     kw = lambda n: dict(notes=n, hold=hold, tail=tail)  # noqa: E731
@@ -272,6 +346,52 @@ def translate(name, slug, log=print):
               "mapped": {k: v for k, v in sorted(base.diff(Patch.from_syx()).items())}}
     for n in notes:
         log("  map:", n)
+
+    # Stage 0: Env 2 -> noise (Envelope 3) on the noise alone, gate VCA, filter open
+    noise_slot = next((k for k in ("Assign 4 Amount", "Assign 4 Amount 2", "Assign 4 Amount 3")
+                       if dry["Assign 4 Source"] == 38 and dry[k.replace("Amount", "Destination")] == 23), None)
+    if noise_slot:
+        nkw = dict(notes=(60,), hold=float(np.clip(d["envelope_2_attack_s"] + d["envelope_2_decay_s"] + 1.0, 2.0, 7.0)), tail=0.1)
+        _, lvl = juno_target(name, {"dco_square": False, "dco_saw": False, "dco_sub": False, "vcf_cutoff_hz": 102600.0,
+                                    "vcf_envelope_modulation": 0.0, "vcf_resonance": 0.0, "vca_modulation_source": "Gate"}, **nkw)
+        held = lvl[int(0.2 * len(lvl) / (nkw["hold"] + nkw["tail"])):-int(0.15 * len(lvl) / (nkw["hold"] + nkw["tail"]))]
+        if held.max() - held.min() < 3.0:  # Afterglow Pad: flat (headless, the grid's Env 2 -> noise did nothing)
+            notes.append(f"Env 2 -> noise: no swell in the Jun-6 V render ({held.max() - held.min():.1f} dB), "
+                         "Envelope 3 kept from the tables")
+            log("  map:", notes[-1])
+            noise_slot = None
+    if noise_slot:
+        p = dry.copy().set(Osc_Mainvolume=0, Cutoff=127, Filter1_Env_Amt=0, Filter1_Resonance=0, Amp_Env_Attack=0,
+                           Amp_Env_Decay=127, Amp_Env_Sustain=127, Amp_Env_Release=0)
+        # Noise Volume stays as mapped (its level re the oscillators is calibrated); the loss compares level
+        # shapes, so the slot amount is set by the swell over that base level
+        free = {"Envelope 3/Attack": (0, 127), "Envelope 3/Decay": (0, 127), "Envelope 3/Sustain": (0, 127),
+                noise_slot: (64, 127)}
+        p, l0 = coordinate_search(p, free, level_fit_loss(lvl, **nkw), start_step=8, log=log)
+        report["noise_env_level_error_db"] = round(l0, 2)
+        for k in free:
+            dry[k] = p[k]
+
+    # Stage 0b: velocity -> cutoff, as the brightness gap between velocity 40 and 120 (single note)
+    if dry["Assign 5 Source"] == 24:
+        n, vkw = examples[0], dict(hold=hold, tail=tail)
+
+        def gap(o):
+            jun6.load(name, {**FX_OFF, **o})
+            return held_brightness(jun6.render(n, hold, tail, vel=120), hold) - held_brightness(jun6.render(n, hold, tail, vel=40), hold)
+        want, flat = gap({}), gap({"velocity_mod_amount": 0.0})
+        if abs(want - flat) < 0.1:  # headless, the grid ignored note velocity (Afterglow Pad)
+            notes.append(f"velocity -> VCF: no response in the Jun-6 V render ({want - flat:+.2f} oct), amount kept as mapped")
+            log("  map:", notes[-1])
+        else:
+            amts = list(range(64, 128, 4)) if want >= 0 else list(range(0, 65, 4))
+            ps = [dry.copy().set(Assign_5_Amount=a) for a in amts]
+            hi = [held_brightness(x, hold) for x in render_virus_many(ps, notes=n, vel=120, **vkw)]
+            lo = [held_brightness(x, hold) for x in render_virus_many(ps, notes=n, vel=40, **vkw)]
+            gaps = np.array(hi) - np.array(lo)
+            dry["Assign 5 Amount"] = amts[int(np.argmin(np.abs(gaps - want)))]
+            report["velocity_brightness_octaves"] = [round(float(want), 2), round(float(gaps[amts.index(dry["Assign 5 Amount"])]), 2)]
+            log(f"  velocity 40->120: Juno {want:+.2f} oct, Virus slot 5 amount {dry['Assign 5 Amount']}")
 
     # Stage 1: amp envelope, filter wide open (chord). Gate VCA is fixed.
     if d["vca_modulation_source"] != "Gate":
@@ -301,7 +421,7 @@ def translate(name, slug, log=print):
     report["cutoff_fit"], report["cutoff_trimmed"] = p["Cutoff"], cuts[i]
     report["brightness_gap_semitones"] = round(12 * float(bs[i] - ref_b), 2)
     p["Cutoff"] = cuts[i]
-    for k, v in chorus.items():
+    for k, v in fx.items():
         p[k] = v
 
     out = ROOT / "patches" / f"{slug}.syx"
@@ -320,7 +440,9 @@ def main():
     ap.add_argument("--map-only", action="store_true", help="write the mapped patch without fitting")
     a = ap.parse_args()
     if a.map_only:
-        p, notes = map_structure(juno_params(a.name))
+        d = juno_params(a.name)
+        p, notes = map_structure(d)
+        map_extended(d, preset_mods(a.name), p, notes)
         p.save(ROOT / "patches" / f"{a.slug}.syx")
         print("\n".join(notes))
         return

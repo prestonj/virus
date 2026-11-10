@@ -786,6 +786,37 @@ Tables in calibration.json (`juno_*`, `virus_*` names listed in each step's docs
   tracking, low/high EQ, Mainvolume, sub balance, HPF) brought band error to
   0.7–1.8 dB from 1.3–5.6 dB.
 
+## Arturia preset with extended features: Afterglow Pad (2026-10-27)
+
+First Arturia (non-Vintage) Jun-6 V preset: square + sub, negative filter envelope, Env 2 -> noise,
+LFO 2 (1.5 bars) -> delay feedback, velocity -> VCF, mod wheel -> resonance, aftertouch -> HPF,
+stereo delay 364 ms. `translate_juno.map_extended` reads the modulation grid (`preset_mods`,
+stored 0-1 → amount 2v−1; matches the exposed shortcut knobs: velocity 0.568 → velocity_mod_amount 0.136).
+- **Macros** (brightness/timbre/time/movement) set as plugin parameters change nothing here either.
+- **Headless, the modulation grid doesn't follow played notes**: Env 2 -> noise (amount +1) leaves the
+  noise flat (2 dB, gate VCA); velocity 40 vs 120 gives no brightness gap, though changing
+  velocity_mod_amount shifts the overall brightness (it acts on some fixed velocity). So these routings
+  can't be fitted against renders; the translator detects "no effect" and keeps the mapped values.
+  Here it doesn't matter: the noise is 44 dB under the oscillators (501 Hz low-pass).
+- **Jun-6 V delay** (calibrate_juno.py `delay`): feedback is the linear echo gain (0.35 → −9.3 dB per
+  repeat); dry/wet 0.5 = echo level with dry, ±4 dB per 0.1; stereo knob lengthens the **right** delay,
+  ratio 1 + 0.19 × knob (Afterglow 0.69 → 1.13; its echoes L 364 / R 416 ms), no cross-feed.
+- **Virus delay**: Delay Time = 5.46 ms per step (67 = 366 ms). Classic Simple Delay is mono (side/mid
+  −90 dB); `Delay/Tape Delay Modulation` (default 12) wobbles the echoes, set 0. Feedback 44 ≈ −9.3 dB
+  per repeat, Send 93 ≈ echo level with dry (Send 127 is all wet). **Ping Pong n:m modes** keep left at the
+  delay time and put right echoes at m/n of it (8:7 → 0.875 T): different timing from the Juno, same
+  decorrelated width (side/mid −9.4 vs Juno −5.2 dB). Tape types time differently (Tape Clocked
+  follows its left/right clocks, 0.5 / 0.25 s here, not Delay Time; Tape Free ratio 4:3 starts right at 0.75 T).
+- **The pad's "breathing" is the negative filter envelope**: level rises in 0.25 s, dips 17 dB at
+  0.75 s as the cutoff sweeps down, recovers over ~1.5 s. A spectrum-only phrase fit misses it; phrase_fit
+  `--time` adds a 0.1 s loudness term and frees filter-env attack/decay, amp release, delay feedback and
+  Envelope 3 release. Freeing the amp attack instead made it fake the dip with a slow attack (−18 dB at
+  the start). Result: phrase error 8.0 → 3.6 dB, loudness within ~4 dB through the phrase and tail.
+- **Virus noise** at Color 64 has more low end than the Juno's; phrase_fit now frees Noise Color when a
+  patch uses noise.
+- Not translated: portamento 31 ms, aftertouch -> HPF (HPF off), reverb (off here). LFO 2 -> delay
+  feedback (Virus LFO 1 assign) and mod wheel -> resonance are mapped 1:1, not calibrated.
+
 ## Virus A/B/C compatibility (looked at, then skipped by the user)
 
 - Single format (from source): A/B/C singles are 256 bytes (pages A + B

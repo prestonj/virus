@@ -116,6 +116,8 @@ ROLES = {
     "juno-bass-1": ("jun6:Vintage Factory/31 Bass 1", "bass", "Juno Bass 1"),
     "juno-clavichord-1": ("jun6:Vintage Factory/33 Clavichord 1", "arp", "Juno Clavichord 1"),
     "juno-harpsichord": ("jun6:Vintage Factory/25 Harpsichord", "arp", "Juno Harpsichord"),
+    # Arturia's own Jun-6 V presets (extended features)
+    "juno-afterglow-pad": ("jun6:Factory/Afterglow Pad", "pad", "Afterglow Pad"),
 }
 
 
